@@ -3,7 +3,8 @@
 
 CMakeFiles/Main.dir/main.cpp.obj
  C:/Users/nickt/Documents/c/Cruster/main.cpp
- C:/Users/nickt/Documents/c/Cruster/drawing.h
+ C:/Users/nickt/Documents/c/Cruster/customdrawing.h
+ C:/Users/nickt/Documents/c/Cruster/customrendering.h
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL.h
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_assert.h
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_atomic.h

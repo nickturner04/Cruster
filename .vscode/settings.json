@@ -1,5 +1,8 @@
 {
     "cmake.sourceDirectory": "C:/Users/nickt/Documents/c/Cruster",
+    "cmake.debugConfig": {
+        "externalConsole": true,
+    },
     "files.associations": {
         "iostream": "cpp"
     }

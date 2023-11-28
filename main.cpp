@@ -1,6 +1,7 @@
 #include <iostream>
 #include <SDL2/SDL.h>
-#include "drawing.h"
+#include "customrendering.h"
+#include "customdrawing.h"
 
 #define DEFAULTWIDTH 800
 #define DEFAULTHEIGHT 600
@@ -28,7 +29,7 @@ int main( int argc, char* argv[] )
     else{
         
     }
-    
+
 
     if (NULL == window)
     {
@@ -82,17 +83,20 @@ int main( int argc, char* argv[] )
            }
            
         }
-        if (drawing)
-        {
-            printf("X: %i",mouse_x ,"%s Y: %i",mouse_y,"\n");
-            
-            
-        }
+        
         bool drawSpecialCursor = false;
-        if (mouse_x > VIEWPORTX && mouse_y > VIEWPORTY)
+        if (mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h)
             {
                 SDL_ShowCursor(0);
                 drawSpecialCursor = true;
+                if (drawing)
+                {
+                    printf("X: %i",mouse_x ,"%s Y: %i",mouse_y,"\n");
+                    int localx = mouse_x - VIEWPORTX;
+                    int localy = mouse_y - VIEWPORTY;
+                    SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
+                    pixels[p.y * CANVASWIDTH + p.x] = 0;
+                }
             }
             else{
                 SDL_ShowCursor(1);

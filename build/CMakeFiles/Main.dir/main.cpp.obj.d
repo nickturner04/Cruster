@@ -302,4 +302,5 @@ CMakeFiles/Main.dir/main.cpp.obj: \
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_version.h \
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_locale.h \
  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_misc.h \
- C:/Users/nickt/Documents/c/Cruster/drawing.h
+ C:/Users/nickt/Documents/c/Cruster/customrendering.h \
+ C:/Users/nickt/Documents/c/Cruster/customdrawing.h
