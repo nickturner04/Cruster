@@ -11,6 +11,10 @@ int CANVASWIDTH = 640, CANVASHEIGHT = 480;
 int VIEWPORTWIDTH = WIDTH - CANVASWIDTH, VIEWPORTHEIGHT = HEIGHT - CANVASHEIGHT;
 int VIEWPORTX = 0 + VIEWPORTWIDTH, VIEWPORTY = 0 + VIEWPORTHEIGHT;
 
+int ELEMENTSCALE = 2;
+
+toolbar defaultbar = {0,0,16,2};
+
 int main( int argc, char* argv[] )
 {
     SDL_Init( SDL_INIT_EVERYTHING);
@@ -85,6 +89,16 @@ int main( int argc, char* argv[] )
         }
         
         bool drawSpecialCursor = false;
+        int boxpos_x = -1;
+        int boxpos_y = -1;
+        if (mouse_y > defaultbar.y && mouse_y < defaultbar.y + defaultbar.h * 16 * ELEMENTSCALE && mouse_x < defaultbar.x + defaultbar.w * 16 * ELEMENTSCALE)
+        {
+            int x = mouse_x - defaultbar.x;
+            int y = mouse_y - defaultbar.y;
+            boxpos_x = (int)(x ) / (16 * ELEMENTSCALE);
+            boxpos_y = (int)(y ) / (16 * ELEMENTSCALE);
+            printf("B_X: %i", x, "%s B_Y: %i", boxpos_y, "%s\n");
+        }
         if (mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h)
             {
                 SDL_ShowCursor(0);
@@ -98,10 +112,11 @@ int main( int argc, char* argv[] )
                     pixels[p.y * CANVASWIDTH + p.x] = 0;
                 }
             }
-            else{
-                SDL_ShowCursor(1);
-                drawSpecialCursor = false;
-            }
+        else
+        {
+            SDL_ShowCursor(1);
+            drawSpecialCursor = false;
+        }
         SDL_SetRenderDrawColor(renderer,148,148,148,255);
         SDL_Rect rect = {0,0,WIDTH,HEIGHT};
         SDL_RenderFillRect(renderer,&rect);
@@ -111,7 +126,7 @@ int main( int argc, char* argv[] )
         SDL_RenderCopy(renderer, canvas, &snapshot, &viewport);
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
         SDL_RenderDrawRect(renderer, &viewport);
-
+        drawToolbar(renderer,&defaultbar,ELEMENTSCALE,boxpos_x,boxpos_y);
         if (drawSpecialCursor)
         {
             SDL_SetRenderDrawColor(renderer,148,148,148,255);
