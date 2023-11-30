@@ -650,6 +650,18 @@
 			"value" : "OFF"
 		},
 		{
+			"name" : "CMAKE_HAVE_LIBC_PTHREAD",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Test CMAKE_HAVE_LIBC_PTHREAD"
+				}
+			],
+			"type" : "INTERNAL",
+			"value" : "1"
+		},
+		{
 			"name" : "CMAKE_HOME_DIRECTORY",
 			"properties" : 
 			[
@@ -1322,6 +1334,30 @@
 			"value" : "C:/Users/nickt/Documents/c/Cruster"
 		},
 		{
+			"name" : "FIND_PACKAGE_MESSAGE_DETAILS_Threads",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Details about finding Threads"
+				}
+			],
+			"type" : "INTERNAL",
+			"value" : "[TRUE][v()]"
+		},
+		{
+			"name" : "MINGW32_LIBRARY",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "link flags for MinGW"
+				}
+			],
+			"type" : "STRING",
+			"value" : "mingw32;-mwindows"
+		},
+		{
 			"name" : "PCL_DIR",
 			"properties" : 
 			[
@@ -1370,6 +1406,18 @@
 			"value" : "C:/Users/nickt/Documents/c/Cruster"
 		},
 		{
+			"name" : "SDL2MAIN_LIBRARY",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Path to a library."
+				}
+			],
+			"type" : "FILEPATH",
+			"value" : "SDL2MAIN_LIBRARY-NOTFOUND"
+		},
+		{
 			"name" : "SDL2_DIR",
 			"properties" : 
 			[
@@ -1380,6 +1428,54 @@
 			],
 			"type" : "PATH",
 			"value" : "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2"
+		},
+		{
+			"name" : "SDL2_INCLUDE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Path to a file."
+				}
+			],
+			"type" : "PATH",
+			"value" : "SDL2_INCLUDE_DIR-NOTFOUND"
+		},
+		{
+			"name" : "SDL2_Image_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "The directory containing a CMake configuration file for SDL2_Image."
+				}
+			],
+			"type" : "PATH",
+			"value" : "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image"
+		},
+		{
+			"name" : "SDL2_LIBRARY_TEMP",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Path to a library."
+				}
+			],
+			"type" : "INTERNAL",
+			"value" : "SDL2_LIBRARY_TEMP-NOTFOUND"
+		},
+		{
+			"name" : "SDL2_image_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "The directory containing a CMake configuration file for SDL2_image."
+				}
+			],
+			"type" : "PATH",
+			"value" : "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image"
 		},
 		{
 			"name" : "_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED",

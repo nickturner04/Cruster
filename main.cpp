@@ -1,5 +1,6 @@
 #include <iostream>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "customrendering.h"
 #include "customdrawing.h"
 
@@ -9,11 +10,23 @@
 int WIDTH = DEFAULTWIDTH, HEIGHT = DEFAULTHEIGHT;
 int CANVASWIDTH = 640, CANVASHEIGHT = 480;
 int VIEWPORTWIDTH = WIDTH - CANVASWIDTH, VIEWPORTHEIGHT = HEIGHT - CANVASHEIGHT;
-int VIEWPORTX = 0 + VIEWPORTWIDTH, VIEWPORTY = 0 + VIEWPORTHEIGHT;
+int VIEWPORTX = 0, VIEWPORTY = 0 + VIEWPORTHEIGHT;
 
 int ELEMENTSCALE = 2;
 
-toolbar defaultbar = {0,0,16,2};
+toolbarRect defaultbar = {0,32,8,1,16,16};
+toolbarRect filebar = {0,0,3,1,16,16};
+
+//Default empty function that is called for an event
+int DefaultEmpty(){ return -1;}
+//Event Pointers
+//Outside Viewport
+int (*E_Click)() = &DefaultEmpty;
+//Inside viewport
+int (*E_Mousedown)() = &DefaultEmpty;
+int (*E_Mouseup)() = &DefaultEmpty;
+
+int v = IMG_INIT_AVIF;
 
 int main( int argc, char* argv[] )
 {
@@ -24,11 +37,52 @@ int main( int argc, char* argv[] )
     SDL_Texture * canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,CANVASWIDTH,CANVASHEIGHT);
     Uint32 * pixels = new Uint32[CANVASHEIGHT * CANVASWIDTH];
     memset(pixels,255,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
+    
+    
+    toolbarButton *filebuttons = new toolbarButton[filebar.w * filebar.h];
+    for (size_t i = 0; i < filebar.w * filebar.h; i++)
+    {
+        filebuttons[i] = createButton(nullptr,nullptr);
+    }
 
-    SDL_Surface * imageSurface = SDL_LoadBMP("resources/turkey.bmp");
+    toolbarButton *toolButtons = new toolbarButton[defaultbar.w * defaultbar.h];
+    for (size_t i = 0; i < defaultbar.w * defaultbar.h; i++)
+    {
+        toolButtons[i] = createButton(nullptr,nullptr);
+    }
+    
+    SDL_Surface * imageSurface = IMG_Load("resources/icons/new.bmp");
+    SDL_Texture * tex1 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    filebuttons[0] = createButton(nullptr,tex1);
+    imageSurface = SDL_LoadBMP("resources/icons/open.bmp");
+    SDL_Texture * tex2 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    filebuttons[1] = createButton(nullptr,tex2);
+    imageSurface = SDL_LoadBMP("resources/icons/save.bmp");
+    SDL_Texture * tex3 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    filebuttons[2] = createButton(nullptr,tex3);
+    imageSurface = SDL_LoadBMP("resources/icons/pencil.bmp");
+    SDL_Texture * tex4 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[0] = createButton(nullptr,tex4);
+    imageSurface = SDL_LoadBMP("resources/icons/paint.bmp");
+    SDL_Texture * tex5 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[1] = createButton(nullptr,tex5);
+    imageSurface = SDL_LoadBMP("resources/icons/fill.bmp");
+    SDL_Texture * tex6 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[2] = createButton(nullptr,tex6);
+    imageSurface = IMG_Load("resources/icons/picker.png");
+    SDL_Texture * tex7 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[3] = createButton(nullptr,tex7);
+    imageSurface = IMG_Load("resources/icons/shape.png");
+    SDL_Texture * tex8 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[4] = createButton(nullptr,tex8);
+
+    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons)};
+    int numToolbars = 2;
+    
     if (imageSurface == NULL)
     {
-        std::cout << "Image not loaded" << SDL_GetError() << std::endl;
+        std::cout <<SDL_GetError() << std::endl;
+        
     }
     else{
         
@@ -59,57 +113,72 @@ int main( int argc, char* argv[] )
     SDL_Rect viewport = {VIEWPORTX,VIEWPORTY,CANVASWIDTH,CANVASHEIGHT};
     SDL_Rect snapshot = {0,0,CANVASHEIGHT,CANVASWIDTH};
 
-    while (true)
+    bool running = true;
+
+
+    while (running)
     {
-        SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+        bool mouseInViewport = mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h;
         if (SDL_PollEvent( &windowEvent))
         {
-           if (SDL_QUIT == windowEvent.type){
-                break;
-           }
-           else if (SDL_WINDOWEVENT == windowEvent.type)
-           {
+            switch (windowEvent.type)
+            {
+            case SDL_QUIT:
+                running = false;
+            continue;
+
+            case SDL_WINDOWEVENT:
                 if (windowEvent.window.event == SDL_WINDOWEVENT_SIZE_CHANGED);
+            break;
+
+            case SDL_MOUSEMOTION:
+                mouse_x = windowEvent.motion.x;
+                mouse_y = windowEvent.motion.y;
+            break;
+
+            case SDL_MOUSEBUTTONDOWN:
+                if (mouseInViewport)
+                {
+                    drawing = true;
+                }
+                else{
+
+                }
                 
-                
-           }
-           
-           else if(SDL_MOUSEBUTTONDOWN == windowEvent.type){
-            drawing = true;
-           }
-           else if(SDL_MOUSEBUTTONUP == windowEvent.type){
-            drawing = false;
-           }
-           else if (SDL_MOUSEMOTION == windowEvent.type)
-           {
-            mouse_x = windowEvent.motion.x;
-            mouse_y = windowEvent.motion.y;
-           }
+            break;
+
+            case SDL_MOUSEBUTTONUP:
+                drawing = false;
+            break;
+
+            case SDL_KEYDOWN:
+                switch (windowEvent.key.keysym.sym)
+                {
+                default:
+                    break;
+                }
+            break;
+
+            default:
+                break;
+            }
            
         }
         
         bool drawSpecialCursor = false;
-        int boxpos_x = -1;
-        int boxpos_y = -1;
-        if (mouse_y > defaultbar.y && mouse_y < defaultbar.y + defaultbar.h * 16 * ELEMENTSCALE && mouse_x < defaultbar.x + defaultbar.w * 16 * ELEMENTSCALE)
-        {
-            int x = mouse_x - defaultbar.x;
-            int y = mouse_y - defaultbar.y;
-            boxpos_x = (int)(x ) / (16 * ELEMENTSCALE);
-            boxpos_y = (int)(y ) / (16 * ELEMENTSCALE);
-            printf("B_X: %i", x, "%s B_Y: %i", boxpos_y, "%s\n");
-        }
-        if (mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h)
+        if (mouseInViewport)
             {
                 SDL_ShowCursor(0);
                 drawSpecialCursor = true;
                 if (drawing)
                 {
                     printf("X: %i",mouse_x ,"%s Y: %i",mouse_y,"\n");
-                    int localx = mouse_x - VIEWPORTX;
-                    int localy = mouse_y - VIEWPORTY;
-                    SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
-                    pixels[p.y * CANVASWIDTH + p.x] = 0;
+                    int localx = mouse_x - viewport.x;
+                    int localy = mouse_y - viewport.y;
+                    //SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
+                    pixels[localy * CANVASWIDTH + localx] = 0;
+                    SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+                    
                 }
             }
         else
@@ -122,11 +191,13 @@ int main( int argc, char* argv[] )
         SDL_RenderFillRect(renderer,&rect);
         
         SDL_RenderClear(renderer);
-        SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+        toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,2,2,mouse_x,mouse_y);
+        //SDL_RenderCopy(renderer,tex,NULL,NULL);
         SDL_RenderCopy(renderer, canvas, &snapshot, &viewport);
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
         SDL_RenderDrawRect(renderer, &viewport);
-        drawToolbar(renderer,&defaultbar,ELEMENTSCALE,boxpos_x,boxpos_y);
+        
+        //drawToolbar(renderer,&filebar,1,0,0);
         if (drawSpecialCursor)
         {
             SDL_SetRenderDrawColor(renderer,148,148,148,255);
@@ -135,7 +206,7 @@ int main( int argc, char* argv[] )
             drawCircle(renderer,mouse_x,mouse_y,10);
         }
         SDL_RenderPresent(renderer);
-       
+       SDL_Delay(17);
     }
 
     delete[] pixels;

@@ -160,6 +160,22 @@
 			"isCMake" : true,
 			"isExternal" : true,
 			"path" : "C:/Program Files/CMake/share/cmake-3.28/Modules/FeatureSummary.cmake"
+		},
+		{
+			"path" : "src/lib/cmake/SDL2_image/sdl2_image-config-version.cmake"
+		},
+		{
+			"path" : "src/lib/cmake/SDL2_image/sdl2_image-config.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/Program Files/CMake/share/cmake-3.28/Modules/FeatureSummary.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake"
 		}
 	],
 	"kind" : "cmakeFiles",

@@ -22,6 +22,7 @@ CMakeFiles/Main.dir/main.cpp.obj: C:/Users/nickt/Documents/c/Cruster/main.cpp \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_haptic.h \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_hidapi.h \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_hints.h \
+  C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_image.h \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_joystick.h \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_keyboard.h \
   C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_keycode.h \
@@ -312,6 +313,12 @@ C:/Users/nickt/Documents/c/Cruster/main.cpp:
 
 C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_keyboard.h:
 
+C:/Users/nickt/Documents/c/w64devkit/x86_64-w64-mingw32/include/wctype.h:
+
+C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c++/istream:
+
+C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_image.h:
+
 C:/Users/nickt/Documents/c/Cruster/customdrawing.h:
 
 C:/Users/nickt/Documents/c/Cruster/customrendering.h:
@@ -339,10 +346,6 @@ C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_power.h:
 C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_atomic.h:
 
 C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_blendmode.h:
-
-C:/Users/nickt/Documents/c/w64devkit/x86_64-w64-mingw32/include/vadefs.h:
-
-C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/avx512bf16intrin.h:
 
 C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_rect.h:
 
@@ -483,6 +486,10 @@ C:/Users/nickt/Documents/c/Cruster/src/include/SDL2/SDL_version.h:
 C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/adxintrin.h:
 
 C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxcomplexintrin.h:
+
+C:/Users/nickt/Documents/c/w64devkit/x86_64-w64-mingw32/include/vadefs.h:
+
+C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/avx512bf16intrin.h:
 
 C:/Users/nickt/Documents/c/w64devkit/x86_64-w64-mingw32/include/_timeval.h:
 
@@ -747,10 +754,6 @@ C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c
 C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c++/iosfwd:
 
 C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c++/iostream:
-
-C:/Users/nickt/Documents/c/w64devkit/x86_64-w64-mingw32/include/wctype.h:
-
-C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c++/istream:
 
 C:/Users/nickt/Documents/c/w64devkit/lib/gcc/x86_64-w64-mingw32/13.2.0/include/c++/pstl/pstl_config.h:
 

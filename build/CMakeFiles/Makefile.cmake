@@ -10,6 +10,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeCInformation.cmake"
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeCXXInformation.cmake"
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake"
+  "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake"
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeGenericSystem.cmake"
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake"
   "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake"
@@ -37,6 +38,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.28.0-rc5/CMakeSystem.cmake"
   "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2/sdl2-config-version.cmake"
   "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2/sdl2-config.cmake"
+  "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image/sdl2_image-config-version.cmake"
+  "C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image/sdl2_image-config.cmake"
   )
 
 # The corresponding makefile is:

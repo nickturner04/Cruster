@@ -250,6 +250,9 @@ Cruster_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 Cruster_SOURCE_DIR:STATIC=C:/Users/nickt/Documents/c/Cruster
 
+//link flags for MinGW
+MINGW32_LIBRARY:STRING=mingw32;-mwindows
+
 //The directory containing a CMake configuration file for PCL.
 PCL_DIR:PATH=PCL_DIR-NOTFOUND
 
@@ -262,8 +265,20 @@ Project_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 Project_SOURCE_DIR:STATIC=C:/Users/nickt/Documents/c/Cruster
 
+//Path to a library.
+SDL2MAIN_LIBRARY:FILEPATH=SDL2MAIN_LIBRARY-NOTFOUND
+
 //The directory containing a CMake configuration file for SDL2.
 SDL2_DIR:PATH=C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2
+
+//Path to a file.
+SDL2_INCLUDE_DIR:PATH=SDL2_INCLUDE_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for SDL2_Image.
+SDL2_Image_DIR:PATH=C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image
+
+//The directory containing a CMake configuration file for SDL2_image.
+SDL2_image_DIR:PATH=C:/Users/nickt/Documents/c/Cruster/src/lib/cmake/SDL2_image
 
 
 ########################
@@ -352,6 +367,8 @@ CMAKE_GENERATOR_INSTANCE:INTERNAL=
 CMAKE_GENERATOR_PLATFORM:INTERNAL=
 //Name of generator toolset.
 CMAKE_GENERATOR_TOOLSET:INTERNAL=
+//Test CMAKE_HAVE_LIBC_PTHREAD
+CMAKE_HAVE_LIBC_PTHREAD:INTERNAL=1
 //Source directory with the top level CMakeLists.txt file for this
 // project
 CMAKE_HOME_DIRECTORY:INTERNAL=C:/Users/nickt/Documents/c/Cruster
@@ -428,6 +445,10 @@ CMAKE_STRIP-ADVANCED:INTERNAL=1
 CMAKE_TAPI-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//Details about finding Threads
+FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
+//Path to a library.
+SDL2_LIBRARY_TEMP:INTERNAL=SDL2_LIBRARY_TEMP-NOTFOUND
 //linker supports push/pop state
 _CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED:INTERNAL=TRUE
 
