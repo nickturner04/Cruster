@@ -2,7 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <inttypes.h>
+#include <string.h>
 #include "customrendering.h"
 #include "customdrawing.h"
 
@@ -18,7 +18,7 @@ typedef enum ToolType{
 #define DEFAULTHEIGHT 600
 
 int WIDTH = DEFAULTWIDTH, HEIGHT = DEFAULTHEIGHT;
-int CANVASWIDTH = 640, CANVASHEIGHT = 480;
+int CANVASWIDTH = DEFAULTWIDTH, CANVASHEIGHT = 480;
 int VIEWPORTWIDTH = WIDTH - CANVASWIDTH, VIEWPORTHEIGHT = HEIGHT - CANVASHEIGHT;
 int VIEWPORTX = 0, VIEWPORTY = 0 + VIEWPORTHEIGHT;
 
@@ -90,15 +90,18 @@ int setToolShape(void* p){
 int main( int argc, char* argv[] )
 {
     SDL_Init( SDL_INIT_EVERYTHING);
-
+    TTF_Init();
     SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer * renderer = SDL_CreateRenderer(window,-1,0);
     SDL_Texture * canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,CANVASWIDTH,CANVASHEIGHT);
-    TTF_Font* font = TTF_OpenFont("resources/Cobol Bold.ttf",24);
-    SDL_Color white = {255,255,255,255};
-    SDL_Surface* message = TTF_RenderText_Solid(font,"Skibidi Toilet",white);
+    TTF_Font* font = TTF_OpenFont("resources/Cobol Bold.ttf",32);
+    SDL_Color white = {0,0,0,255};
+    SDL_Rect debugMessageBox{0,128,512,64};
+    char message[] = "M_X:000|M_Y:000|L_X:000|L_Y|000";
+    
+    StringMessage* debugMessage = createStringMessage(renderer,message,debugMessageBox,white,font);
     Uint32 * pixels = new Uint32[CANVASHEIGHT * CANVASWIDTH];
-    memset(pixels,255,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
+    memset(pixels,0xFFFFFFFF,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
     
     
     toolbarButton *filebuttons = new toolbarButton[filebar.w * filebar.h];
@@ -192,6 +195,7 @@ int main( int argc, char* argv[] )
 
     while (running)
     {
+       
         bool mouseInViewport = mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h;
         int clicked = 0;
         if (SDL_PollEvent( &windowEvent))
@@ -214,7 +218,22 @@ int main( int argc, char* argv[] )
             case SDL_MOUSEBUTTONDOWN:
                 if (mouseInViewport)
                 {
-                    drawing = true;
+                    switch (selectedTool)
+                    {
+                    case PENCIL:
+                        drawing = true;
+                        break;
+                    case PAINT:
+                        drawing = true;
+                    break;
+                    case FILL:
+
+                    break;
+                    break;
+                    default:
+                        break;
+                    }
+                    
                 }
                 else{
                     
@@ -223,7 +242,27 @@ int main( int argc, char* argv[] )
             break;
 
             case SDL_MOUSEBUTTONUP:
-                if (mouseInViewport) drawing = false;
+                if (mouseInViewport){
+                    switch (selectedTool)
+                    {
+                    case PENCIL:
+                        drawing = false;
+                    break;
+                    case PAINT:
+                        drawing = false;
+                    break;
+                    case FILL:
+                        for (size_t i = 0; i < CANVASHEIGHT * CANVASWIDTH; i++)
+                        {
+                            pixels[i] = selectedColor;
+                            
+                        }
+                        SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+                    break;
+                    default:
+                        break;
+                    }
+                } 
                 else{
                     clicked = 1;
                 }
@@ -253,8 +292,17 @@ int main( int argc, char* argv[] )
                 {
                     int localx = mouse_x - viewport.x;
                     int localy = mouse_y - viewport.y;
+                    if (localy < 0) localy = 0;
+                    char* message = new char[256];
+                    (message + 0,"M_X:%i",mouse_x);
+                    sprintf(message + 8,"|M_X:%i",mouse_x);
+                    sprintf(message + 16,"|L_X:%i",localx);
+                    sprintf(message + 24,"|L_Y:%i",localy);
+                    puts(message);
+                    updateStringMessage(renderer,debugMessage,message);
+                    delete message;
                     //SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
-                    pixels[localy * CANVASWIDTH + localx] = selectedColor;
+                    pixels[(localy * CANVASWIDTH) + localx] = selectedColor;
                     SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                     
                 }
@@ -264,16 +312,24 @@ int main( int argc, char* argv[] )
             SDL_ShowCursor(1);
             drawSpecialCursor = false;
         }
+
+         SDL_RenderClear(renderer);
+
         SDL_SetRenderDrawColor(renderer,148,148,148,255);
         SDL_Rect rect = {0,0,WIDTH,HEIGHT};
         SDL_RenderFillRect(renderer,&rect);
+
+        SDL_RenderCopy(renderer, canvas, NULL, &viewport);
         
-        SDL_RenderClear(renderer);
-        toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
-        //SDL_RenderCopy(renderer,tex,NULL,NULL);
-        SDL_RenderCopy(renderer, canvas, &snapshot, &viewport);
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
         SDL_RenderDrawRect(renderer, &viewport);
+
+        renderStringMessage(renderer,debugMessage);
+        
+        
+         toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
+        //SDL_RenderCopy(renderer,tex,NULL,NULL);
+        
         
         //drawToolbar(renderer,&filebar,1,0,0);
         if (drawSpecialCursor)
@@ -281,7 +337,8 @@ int main( int argc, char* argv[] )
             SDL_SetRenderDrawColor(renderer,148,148,148,255);
             SDL_RenderDrawLine(renderer,mouse_x - 5, mouse_y,mouse_x + 5, mouse_y);
             SDL_RenderDrawLine(renderer,mouse_x, mouse_y - 5,mouse_x, mouse_y + 5);
-            drawCircle(renderer,mouse_x,mouse_y,10);
+            if (selectedTool == PAINT)drawCircle(renderer,mouse_x,mouse_y,10);
+            
         }
         SDL_RenderPresent(renderer);
        SDL_Delay(17);

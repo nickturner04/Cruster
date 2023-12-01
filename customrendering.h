@@ -3,6 +3,38 @@ extern "C"
 {
 #endif
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
+typedef struct StringMessage{
+    SDL_Rect rect;
+    SDL_Color color;
+    TTF_Font* font;
+    SDL_Texture * texture;
+}StringMessage;
+
+StringMessage* createStringMessage(SDL_Renderer* renderer, char* message, SDL_Rect rect, SDL_Color color, TTF_Font* font){
+
+
+    StringMessage stringMessage = {rect,color,font,NULL};
+    SDL_Surface* surface = TTF_RenderText_Solid(font,message,color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer,surface);
+    SDL_FreeSurface(surface);
+    stringMessage.texture = texture;
+    StringMessage* out = (StringMessage*)malloc(sizeof(StringMessage));
+    *out = stringMessage;
+    return out;
+}
+
+void updateStringMessage(SDL_Renderer* renderer, StringMessage* stringMessage,char* message){
+    SDL_DestroyTexture(stringMessage->texture);
+    SDL_Surface* surface = TTF_RenderText_Solid(stringMessage->font,message,stringMessage->color);
+    stringMessage->texture = SDL_CreateTextureFromSurface(renderer,surface);
+    SDL_FreeSurface(surface);
+}
+
+void renderStringMessage(SDL_Renderer* renderer, StringMessage* message){
+    SDL_RenderCopy(renderer,message->texture,NULL,&message->rect);
+}
 
 typedef struct toolbarRect{
     Uint16 x;
@@ -198,8 +230,6 @@ toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int n
         printf("\nClick: %i",m_down,"%s\n");
     }
     
-    SDL_Rect box = {0,0,400,400};
-    SDL_RenderFillRect(renderer,&box);
     
     toolbarButton* selectedButton = NULL;
     for (size_t i = 0; i < numToolbars; i++)
