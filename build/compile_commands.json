@@ -1,8 +1,0 @@
-[
-{
-  "directory": "C:/Users/nickt/Documents/c/Cruster/build",
-  "command": "C:/Users/nickt/Documents/c/w64devkit/bin/g++.exe  @CMakeFiles/Main.dir/includes_CXX.rsp -g -o CMakeFiles/Main.dir/main.cpp.obj -c C:/Users/nickt/Documents/c/Cruster/main.cpp",
-  "file": "C:/Users/nickt/Documents/c/Cruster/main.cpp",
-  "output": "CMakeFiles/Main.dir/main.cpp.obj"
-}
-]

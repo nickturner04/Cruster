@@ -1,3 +1,0 @@
-C:/Users/nickt/Documents/c/Cruster/build/CMakeFiles/Main.dir
-C:/Users/nickt/Documents/c/Cruster/build/CMakeFiles/edit_cache.dir
-C:/Users/nickt/Documents/c/Cruster/build/CMakeFiles/rebuild_cache.dir
