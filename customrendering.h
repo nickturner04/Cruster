@@ -18,7 +18,8 @@ typedef enum HighlightMode{
     HLMODE_UNSELECTED,
     HLMODE_TOGGLE_ON,
     HLMODE_TOGGLE_OFF,
-    HLMODE_COLOR
+    HLMODE_COLOR,
+    HLMODE_UNCHANGING
 }HighlightMode;
 
 typedef struct toolbarButton{
@@ -135,44 +136,43 @@ toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int s
     {
         for (size_t j = 0; j < bar.h; j++)
         {
-            if (m_down)(toolbarObject->buttons + i)->highlightmode = 1;
+            if (m_down && (toolbarObject->buttons + i)->highlightmode == 0)(toolbarObject->buttons + i)->highlightmode = 1;
             
             SDL_Rect box = {rect.x + bar.bw * i * scale,rect.y + bar.bh * j * scale, bar.bw * scale, bar.bh * scale};
-            if (i < 6)
+            
+            toolbarButton button = toolbarObject->buttons[j * bar.w + i];
+            if (button.highlightmode == 1)
             {
-                toolbarButton button = toolbarObject->buttons[i];
-                if (button.highlightmode == 1)
-                {
-                    SDL_SetTextureBlendMode(button.Texture,SDL_BLENDMODE_MUL);
-                }
-                SDL_SetRenderDrawColor(renderer,button.r,button.g,button.b,255);
-                SDL_RenderFillRect(renderer,&box);
-                SDL_RenderCopy(renderer, button.Texture, NULL, &box);
-                SDL_SetTextureBlendMode(button.Texture,SDL_BLENDMODE_NONE);
+                SDL_SetTextureBlendMode(button.Texture,SDL_BLENDMODE_MUL);
             }
+            SDL_SetRenderDrawColor(renderer,button.r,button.g,button.b,255);
+            SDL_RenderFillRect(renderer,&box);
+            SDL_RenderCopy(renderer, button.Texture, NULL, &box);
+            SDL_SetTextureBlendMode(button.Texture,SDL_BLENDMODE_NONE);
+            
 
             SDL_SetRenderDrawColor(renderer,0,0,0,255);
             
             if (i == m_x && j == m_y)
             {
                 SDL_SetRenderDrawColor(renderer,196,180,84,255);
-                selectedButton = toolbarObject->buttons + i;
+                selectedButton = toolbarObject->buttons + (j * bar.w + i);
                 if (m_down){
-                    if (selectedButton->highlightmode == HLMODE_COLOR)
+
+                    
+                    if (selectedButton->Pressed != nullptr)
                     {
                         selectedButton->Pressed(selectedButton);
-                    }
-                    else{
-                        if (selectedButton->Pressed != nullptr)
+                        if (selectedButton->highlightmode == 1)
                         {
-                            selectedButton->Pressed(NULL);
                             selectedButton->highlightmode = 0;
                         }
-                        else{
-                            printf("\n WARNING: Button Event is NULL\n");
-                        }
-                        
                     }
+                    else{
+                        printf("\n WARNING: Button Event is NULL\n");
+                    }
+                        
+                    
                 }
             }
             
@@ -206,6 +206,7 @@ toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int n
     {
         int boxpos_x = -1;
         int boxpos_y = -1;
+        int m_down_local = m_down;
         if (m_y > toolbars[i].rect.y && m_y < toolbars[i].rect.y + toolbars[i].rect.h * toolbars[i].rect.bh * scale && m_x < toolbars[i].rect.x + toolbars[i].rect.w * toolbars[i].rect.bw * scale)
         {
             
@@ -215,9 +216,9 @@ toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int n
             boxpos_y = (int)(y ) / (toolbars[i].rect.bw * scale);
         }
         else{
-            m_down = false;
+            m_down_local = false;
         }
-        selectedButton = drawToolbar(renderer,&toolbars[i],scale,boxpos_x,boxpos_y,1);
+        selectedButton = drawToolbar(renderer,&toolbars[i],scale,boxpos_x,boxpos_y,m_down_local);
         
     }
     

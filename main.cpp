@@ -1,6 +1,8 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
+#include <inttypes.h>
 #include "customrendering.h"
 #include "customdrawing.h"
 
@@ -37,6 +39,7 @@ int (*E_Mouseup)() = &DefaultEmpty;
 
 ToolType selectedTool = PENCIL;
 Uint32 selectedColor = 0;
+SDL_Color selectedColorStruct = {0,0,0,0};
 int brushSize = 1;
 
 int save(void* p){
@@ -47,18 +50,15 @@ int save(void* p){
 int setColour(void* p){
     toolbarButton button = *((toolbarButton*)p);
     int bpp = 8;
-    SDL_PixelFormat *format = new SDL_PixelFormat;
-    Uint32 Amask;
-    Uint32 Rmask;
-    Uint32 Gmask;
-    Uint32 Bmask;
-    SDL_PixelFormatEnumToMasks(SDL_PIXELFORMAT_RGBA8888,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
-    format->Amask = Amask;
-    format->Bmask = Bmask;
-    format->Gmask = Gmask;
-    format->Amask = Amask;
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+    
     selectedColor = SDL_MapRGBA(format,button.r,button.g,button.b,255);
-    delete format;
+    printf("%08x\n",selectedColor);
+    SDL_GetRGBA(selectedColor,format,&selectedColorStruct.r,&selectedColorStruct.g,&selectedColorStruct.b,&selectedColorStruct.a);
+    button.r = selectedColorStruct.r;
+    button.g = selectedColorStruct.g;
+    button.b = selectedColorStruct.b;
+    return 1;
 }
 
 int setToolPencil(void* p){
@@ -94,6 +94,9 @@ int main( int argc, char* argv[] )
     SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer * renderer = SDL_CreateRenderer(window,-1,0);
     SDL_Texture * canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,CANVASWIDTH,CANVASHEIGHT);
+    TTF_Font* font = TTF_OpenFont("resources/Cobol Bold.ttf",24);
+    SDL_Color white = {255,255,255,255};
+    SDL_Surface* message = TTF_RenderText_Solid(font,"Skibidi Toilet",white);
     Uint32 * pixels = new Uint32[CANVASHEIGHT * CANVASWIDTH];
     memset(pixels,255,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
     
@@ -115,22 +118,22 @@ int main( int argc, char* argv[] )
     for (size_t i = 0; i < palleteBar.w * palleteBar.h; i++)
     {
         palleteButtons[i] = createButton(&setColour,nullptr,HLMODE_COLOR);
-        palleteButtons[i].r = (int)(255.0f * (float)(i / palleteBar.w * palleteBar.h));
-        palleteButtons[i].g = 0;
-        palleteButtons[i].b = 255;
+        float fraction = i / (float)(palleteBar.w * palleteBar.h);
+        float r = (255.0f * fraction);
+        palleteButtons[i].r = (int)r;
+        palleteButtons[i].g = (int)r;
+        palleteButtons[i].b = (int)r;
     }
-    
-    
     
     SDL_Surface * imageSurface = IMG_Load("resources/icons/new.bmp");
     SDL_Texture * tex1 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[0] = createButton(nullptr,tex1,0);
+    filebuttons[0] = createButton(nullptr,tex1,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/open.bmp");
     SDL_Texture * tex2 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[1] = createButton(nullptr,tex2,0);
+    filebuttons[1] = createButton(nullptr,tex2,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/save.bmp");
     SDL_Texture * tex3 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[2] = createButton(&save,tex3,0);
+    filebuttons[2] = createButton(&save,tex3,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/pencil.bmp");
     SDL_Texture * tex4 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     toolButtons[0] = createButton(&setToolPencil,tex4,HLMODE_SELECTED);
@@ -251,7 +254,7 @@ int main( int argc, char* argv[] )
                     int localx = mouse_x - viewport.x;
                     int localy = mouse_y - viewport.y;
                     //SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
-                    pixels[localy * CANVASWIDTH + localx] = 0;
+                    pixels[localy * CANVASWIDTH + localx] = selectedColor;
                     SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                     
                 }
