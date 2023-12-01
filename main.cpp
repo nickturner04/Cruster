@@ -4,6 +4,14 @@
 #include "customrendering.h"
 #include "customdrawing.h"
 
+typedef enum ToolType{
+    PENCIL,
+    PAINT,
+    FILL,
+    PICKER,
+    SHAPE
+}ToolType;
+
 #define DEFAULTWIDTH 800
 #define DEFAULTHEIGHT 600
 
@@ -16,6 +24,7 @@ int ELEMENTSCALE = 2;
 
 toolbarRect defaultbar = {0,32,8,1,16,16};
 toolbarRect filebar = {0,0,3,1,16,16};
+toolbarRect palleteBar = {256,0,8,4,8,8};
 
 //Default empty function that is called for an event
 int DefaultEmpty(){ return -1;}
@@ -26,7 +35,57 @@ int (*E_Click)() = &DefaultEmpty;
 int (*E_Mousedown)() = &DefaultEmpty;
 int (*E_Mouseup)() = &DefaultEmpty;
 
-int v = IMG_INIT_AVIF;
+ToolType selectedTool = PENCIL;
+Uint32 selectedColor = 0;
+int brushSize = 1;
+
+int save(void* p){
+    printf("Save Pressed!\n");
+    return 1;
+}
+
+int setColour(void* p){
+    toolbarButton button = *((toolbarButton*)p);
+    int bpp = 8;
+    SDL_PixelFormat *format = new SDL_PixelFormat;
+    Uint32 Amask;
+    Uint32 Rmask;
+    Uint32 Gmask;
+    Uint32 Bmask;
+    SDL_PixelFormatEnumToMasks(SDL_PIXELFORMAT_RGBA8888,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
+    format->Amask = Amask;
+    format->Bmask = Bmask;
+    format->Gmask = Gmask;
+    format->Amask = Amask;
+    selectedColor = SDL_MapRGBA(format,button.r,button.g,button.b,255);
+    delete format;
+}
+
+int setToolPencil(void* p){
+    selectedTool = PENCIL;
+    printf("Selected Tool: Pencil\n");
+    return 1;
+}
+int setToolPaint(void* p){
+    selectedTool = PAINT;
+    printf("Selected Tool: Paint\n");
+    return 1;
+}
+int setToolFill(void* p){
+    selectedTool = FILL;
+    printf("Selected Tool: Fill\n");
+    return 1;
+}
+int setToolPicker(void* p){
+    selectedTool = PICKER;
+    printf("Selected Tool: Colour Picker\n");
+    return 1;
+}
+int setToolShape(void* p){
+    selectedTool = SHAPE;
+    printf("Selected Tool: Shape\n");
+    return 1;
+}
 
 int main( int argc, char* argv[] )
 {
@@ -42,42 +101,54 @@ int main( int argc, char* argv[] )
     toolbarButton *filebuttons = new toolbarButton[filebar.w * filebar.h];
     for (size_t i = 0; i < filebar.w * filebar.h; i++)
     {
-        filebuttons[i] = createButton(nullptr,nullptr);
+        filebuttons[i] = createButton(nullptr,nullptr,0);
     }
 
     toolbarButton *toolButtons = new toolbarButton[defaultbar.w * defaultbar.h];
     for (size_t i = 0; i < defaultbar.w * defaultbar.h; i++)
     {
-        toolButtons[i] = createButton(nullptr,nullptr);
+        toolButtons[i] = createButton(nullptr,nullptr,0);
     }
+
+    toolbarButton *palleteButtons = new toolbarButton[palleteBar.w * palleteBar.h];
+
+    for (size_t i = 0; i < palleteBar.w * palleteBar.h; i++)
+    {
+        palleteButtons[i] = createButton(&setColour,nullptr,HLMODE_COLOR);
+        palleteButtons[i].r = (int)(255.0f * (float)(i / palleteBar.w * palleteBar.h));
+        palleteButtons[i].g = 0;
+        palleteButtons[i].b = 255;
+    }
+    
+    
     
     SDL_Surface * imageSurface = IMG_Load("resources/icons/new.bmp");
     SDL_Texture * tex1 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[0] = createButton(nullptr,tex1);
+    filebuttons[0] = createButton(nullptr,tex1,0);
     imageSurface = SDL_LoadBMP("resources/icons/open.bmp");
     SDL_Texture * tex2 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[1] = createButton(nullptr,tex2);
+    filebuttons[1] = createButton(nullptr,tex2,0);
     imageSurface = SDL_LoadBMP("resources/icons/save.bmp");
     SDL_Texture * tex3 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[2] = createButton(nullptr,tex3);
+    filebuttons[2] = createButton(&save,tex3,0);
     imageSurface = SDL_LoadBMP("resources/icons/pencil.bmp");
     SDL_Texture * tex4 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[0] = createButton(nullptr,tex4);
+    toolButtons[0] = createButton(&setToolPencil,tex4,HLMODE_SELECTED);
     imageSurface = SDL_LoadBMP("resources/icons/paint.bmp");
     SDL_Texture * tex5 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[1] = createButton(nullptr,tex5);
+    toolButtons[1] = createButton(&setToolPaint,tex5,HLMODE_UNSELECTED);
     imageSurface = SDL_LoadBMP("resources/icons/fill.bmp");
     SDL_Texture * tex6 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[2] = createButton(nullptr,tex6);
+    toolButtons[2] = createButton(&setToolFill,tex6,HLMODE_UNSELECTED);
     imageSurface = IMG_Load("resources/icons/picker.png");
     SDL_Texture * tex7 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[3] = createButton(nullptr,tex7);
+    toolButtons[3] = createButton(&setToolPicker,tex7,HLMODE_UNSELECTED);
     imageSurface = IMG_Load("resources/icons/shape.png");
     SDL_Texture * tex8 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[4] = createButton(nullptr,tex8);
+    toolButtons[4] = createButton(&setToolShape,tex8,HLMODE_UNSELECTED);
 
-    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons)};
-    int numToolbars = 2;
+    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons),TB_Create(palleteBar,palleteButtons)};
+    int numToolbars = 3;
     
     if (imageSurface == NULL)
     {
@@ -119,6 +190,7 @@ int main( int argc, char* argv[] )
     while (running)
     {
         bool mouseInViewport = mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h;
+        int clicked = 0;
         if (SDL_PollEvent( &windowEvent))
         {
             switch (windowEvent.type)
@@ -142,13 +214,17 @@ int main( int argc, char* argv[] )
                     drawing = true;
                 }
                 else{
-
+                    
                 }
                 
             break;
 
             case SDL_MOUSEBUTTONUP:
-                drawing = false;
+                if (mouseInViewport) drawing = false;
+                else{
+                    clicked = 1;
+                }
+                
             break;
 
             case SDL_KEYDOWN:
@@ -172,7 +248,6 @@ int main( int argc, char* argv[] )
                 drawSpecialCursor = true;
                 if (drawing)
                 {
-                    printf("X: %i",mouse_x ,"%s Y: %i",mouse_y,"\n");
                     int localx = mouse_x - viewport.x;
                     int localy = mouse_y - viewport.y;
                     //SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
@@ -191,7 +266,7 @@ int main( int argc, char* argv[] )
         SDL_RenderFillRect(renderer,&rect);
         
         SDL_RenderClear(renderer);
-        toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,2,2,mouse_x,mouse_y);
+        toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
         //SDL_RenderCopy(renderer,tex,NULL,NULL);
         SDL_RenderCopy(renderer, canvas, &snapshot, &viewport);
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
