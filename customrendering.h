@@ -71,16 +71,24 @@ toolbarButton createButton(int (*event)(void* p), SDL_Texture *texture, int high
 typedef struct toolbar{
     toolbarRect rect;
     toolbarButton * buttons;
+    int mode;
 }toolbar;
 
 toolbar TB_Create(toolbarRect rect, toolbarButton * buttons){
-    toolbar newToolbar;
-    newToolbar.rect = rect;
-    newToolbar.buttons = buttons;
+    toolbar newToolbar = {rect,buttons,0};
     return newToolbar;
 }
 
-void drawCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
+typedef struct Slider{
+    SDL_Rect rect;
+    int hide;
+    int fillPercent;
+    Uint32* link;
+    Uint32 min;
+    Uint32 max;
+}Slider;
+
+void renderCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
     const int diameter = radius * 2;
 
     int x = radius - 1;
@@ -153,6 +161,43 @@ void drawCircleF(SDL_Renderer* renderer, int cx, int cy, int radius){
         }
 
     }
+}
+
+void drawSlider(SDL_Renderer * renderer, Slider * slider, int scale, int m_x, int m_down){
+
+    if (m_down && m_x != -1)
+    {
+        float f = m_x / (float)slider->rect.w;
+        slider->fillPercent = (int)(100.0f * f);
+
+        Uint32 t = slider->min + (Uint32)((float)(slider->max - slider->min) * f);
+        *slider->link = t;
+        printf("Tolerance: %u",*slider->link);
+    }
+    
+    
+    SDL_SetRenderDrawColor(renderer,0,0,255,255);
+    float progress = (float)slider->fillPercent / 100.0f;
+    int fill = (int)(progress * (float)slider->rect.w);
+    SDL_Rect progressRect = {slider->rect.x,slider->rect.y,fill,slider->rect.h};
+    SDL_RenderFillRect(renderer,&progressRect);
+
+    SDL_SetRenderDrawColor(renderer,0,0,0,255);
+    SDL_RenderDrawRect(renderer,&slider->rect);
+}
+
+void renderAllSliders(SDL_Renderer * renderer, Slider* sliders, int numSliders, int scale, int m_x, int m_y, int m_down){
+    for (size_t i = 0; i < numSliders; i++)
+    {
+        if (sliders[i].hide) continue;
+        int pos_x = -1;
+        if (m_y > sliders[i].rect.y && m_y < sliders[i].rect.y + sliders[i].rect.h && m_x <= sliders[i].rect.x + sliders[i].rect.w && m_x >= sliders[i].rect.x)
+        {
+            pos_x = m_x - sliders[i].rect.x;
+        }
+        drawSlider(renderer,&sliders[i],scale,pos_x,m_down);
+    }
+    
 }
 
 toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int scale, int m_x, int m_y, int m_down){
@@ -234,6 +279,8 @@ toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int n
     toolbarButton* selectedButton = NULL;
     for (size_t i = 0; i < numToolbars; i++)
     {
+        if (toolbars[i].mode) continue;
+        
         int boxpos_x = -1;
         int boxpos_y = -1;
         int m_down_local = m_down;

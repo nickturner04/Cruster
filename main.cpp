@@ -27,6 +27,10 @@ int ELEMENTSCALE = 2;
 toolbarRect defaultbar = {0,32,8,1,16,16};
 toolbarRect filebar = {0,0,3,1,16,16};
 toolbarRect palleteBar = {256,0,8,4,8,8};
+toolbarRect fillOptionsBar = {64,64,1,1,16,16};
+SDL_Rect toleranceSliderRect = {96,64,128,16};
+toolbar* fillbar;
+Slider* toleranceSlider;
 
 //Default empty function that is called for an event
 int DefaultEmpty(){ return -1;}
@@ -39,12 +43,34 @@ int (*E_Mouseup)() = &DefaultEmpty;
 
 ToolType selectedTool = PENCIL;
 Uint32 selectedColor = 0;
+Uint32 tolerance = 0;
 SDL_Color selectedColorStruct = {0,0,0,0};
+bool fillmode = true;
 int brushSize = 1;
+
+SDL_Texture* texCont;
+SDL_Texture* texGlob;
+SDL_Texture* texFillCursor;
 
 int save(void* p){
     printf("Save Pressed!\n");
     return 1;
+}
+
+int setFillMode(void* p){
+    toolbarButton* button = (toolbarButton*)p;
+    if (button->highlightmode == HLMODE_TOGGLE_ON)
+    {
+        button->highlightmode = HLMODE_TOGGLE_OFF;
+        button->Texture = texGlob;
+        fillmode = false;
+    }
+    else{
+        button->highlightmode = HLMODE_TOGGLE_ON;
+        button->Texture = texCont;
+        fillmode = true;
+    }
+    return 0;
 }
 
 int setColour(void* p){
@@ -64,26 +90,36 @@ int setColour(void* p){
 int setToolPencil(void* p){
     selectedTool = PENCIL;
     printf("Selected Tool: Pencil\n");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
     return 1;
 }
 int setToolPaint(void* p){
     selectedTool = PAINT;
     printf("Selected Tool: Paint\n");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
     return 1;
 }
 int setToolFill(void* p){
     selectedTool = FILL;
     printf("Selected Tool: Fill\n");
+    fillbar->mode = 0;
+    toleranceSlider->hide = 0;
     return 1;
 }
 int setToolPicker(void* p){
     selectedTool = PICKER;
     printf("Selected Tool: Colour Picker\n");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
     return 1;
 }
 int setToolShape(void* p){
     selectedTool = SHAPE;
     printf("Selected Tool: Shape\n");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
     return 1;
 }
 
@@ -153,9 +189,29 @@ int main( int argc, char* argv[] )
     SDL_Texture * tex8 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     toolButtons[4] = createButton(&setToolShape,tex8,HLMODE_UNSELECTED);
 
-    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons),TB_Create(palleteBar,palleteButtons)};
-    int numToolbars = 3;
+    toolbarButton *fillButtons = new toolbarButton[1];
+    imageSurface = IMG_Load("resources/icons/contiguous.png");
+    texCont = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    fillButtons[0] = createButton(setFillMode,texCont,HLMODE_TOGGLE_ON);
+    imageSurface = IMG_Load("resources/icons/global.png");
+    texGlob = SDL_CreateTextureFromSurface(renderer,imageSurface);
+
+    imageSurface = IMG_Load("resources/icons/fillcursor.png");
+    texFillCursor = SDL_CreateTextureFromSurface(renderer,imageSurface);
+
     
+
+    Slider *sliders = new Slider[1];
+    sliders[0] = {toleranceSliderRect,1,50,&tolerance,1,SDL_MAX_UINT32};
+    toleranceSlider = &sliders[0];
+    
+
+    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons),TB_Create(palleteBar,palleteButtons),TB_Create(fillOptionsBar,fillButtons)};
+    toolbars[3].mode = 1;
+    fillbar = &toolbars[3];
+    int numToolbars = 4;
+    
+
     if (imageSurface == NULL)
     {
         std::cout <<SDL_GetError() << std::endl;
@@ -178,17 +234,16 @@ int main( int argc, char* argv[] )
 
     int mouse_x = 0;
     int mouse_y = 0;
+    int mouse_down = 0;
 
     int x = 0;
     int y = 0;
-
-    int brushRadius = 25;
 
     bool drawing = false;
 
     SDL_Rect screen = {0,0,WIDTH,HEIGHT};
     SDL_Rect viewport = {VIEWPORTX,VIEWPORTY,CANVASWIDTH,CANVASHEIGHT};
-    SDL_Rect snapshot = {0,0,CANVASHEIGHT,CANVASWIDTH};
+    SDL_Rect snapshot = {0,0,CANVASWIDTH,CANVASHEIGHT};
 
     bool running = true;
 
@@ -197,6 +252,10 @@ int main( int argc, char* argv[] )
     {
        
         bool mouseInViewport = mouse_x > viewport.x && mouse_y > viewport.y && mouse_x < viewport.x + viewport.w && mouse_y < viewport.y + viewport.h;
+        int localx = mouse_x - viewport.x;
+        int localy = mouse_y - viewport.y;
+        if (localy < 0) localy = 0;
+        
         int clicked = 0;
         if (SDL_PollEvent( &windowEvent))
         {
@@ -236,7 +295,7 @@ int main( int argc, char* argv[] )
                     
                 }
                 else{
-                    
+                    mouse_down = 1;
                 }
                 
             break;
@@ -252,19 +311,18 @@ int main( int argc, char* argv[] )
                         drawing = false;
                     break;
                     case FILL:
-                        for (size_t i = 0; i < CANVASHEIGHT * CANVASWIDTH; i++)
-                        {
-                            pixels[i] = selectedColor;
-                            
-                        }
+                        
+                        if (localy < 0) localy = 0;
+                        fillmode ? contiguousFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance) : globalFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance);
                         SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                     break;
                     default:
-                        break;
+                    break;
                     }
                 } 
                 else{
                     clicked = 1;
+                    mouse_down = 0;
                 }
                 
             break;
@@ -272,6 +330,13 @@ int main( int argc, char* argv[] )
             case SDL_KEYDOWN:
                 switch (windowEvent.key.keysym.sym)
                 {
+                    case SDLK_LEFTBRACKET:
+                        brushSize -= 1;
+                        if (brushSize == 0) brushSize = 1;
+                    break;
+                    case SDLK_RIGHTBRACKET:
+                        brushSize += 1;
+                    break;
                 default:
                     break;
                 }
@@ -290,19 +355,27 @@ int main( int argc, char* argv[] )
                 drawSpecialCursor = true;
                 if (drawing)
                 {
-                    int localx = mouse_x - viewport.x;
-                    int localy = mouse_y - viewport.y;
+                    
                     if (localy < 0) localy = 0;
-                    char* message = new char[256];
-                    (message + 0,"M_X:%i",mouse_x);
-                    sprintf(message + 8,"|M_X:%i",mouse_x);
-                    sprintf(message + 16,"|L_X:%i",localx);
-                    sprintf(message + 24,"|L_Y:%i",localy);
-                    puts(message);
-                    updateStringMessage(renderer,debugMessage,message);
-                    delete message;
+                    //char* message = new char[256];
+                    //(message + 0,"M_X:%i",mouse_x);
+                    //sprintf(message + 8,"|M_X:%i",mouse_x);
+                    //sprintf(message + 16,"|L_X:%i",localx);
+                    //sprintf(message + 24,"|L_Y:%i",localy);
+                    //puts(message);
+                    //updateStringMessage(renderer,debugMessage,message);
+                    //delete message;
                     //SDL_Point p = GetTextureCoordinate(localx,localy,viewport.w,viewport.h,CANVASWIDTH,CANVASHEIGHT);
-                    pixels[(localy * CANVASWIDTH) + localx] = selectedColor;
+                    //pixels[(localy * CANVASWIDTH) + localx] = selectedColor;
+                    SDL_Rect brush = {localx - brushSize / 2, localy - brushSize / 2, (localx + brushSize) - localx, (localy + brushSize) - localy};
+                    if (selectedTool == PENCIL)
+                    {
+                        drawSquare(pixels,brush,snapshot,selectedColor);
+                    }
+                    else{
+                        drawCircle(pixels,localx,localy,brushSize,snapshot,selectedColor);
+                    }
+                    
                     SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                     
                 }
@@ -327,7 +400,8 @@ int main( int argc, char* argv[] )
         renderStringMessage(renderer,debugMessage);
         
         
-         toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
+        toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
+        renderAllSliders(renderer,sliders,1,ELEMENTSCALE,mouse_x,mouse_y,mouse_down);
         //SDL_RenderCopy(renderer,tex,NULL,NULL);
         
         
@@ -337,8 +411,15 @@ int main( int argc, char* argv[] )
             SDL_SetRenderDrawColor(renderer,148,148,148,255);
             SDL_RenderDrawLine(renderer,mouse_x - 5, mouse_y,mouse_x + 5, mouse_y);
             SDL_RenderDrawLine(renderer,mouse_x, mouse_y - 5,mouse_x, mouse_y + 5);
-            if (selectedTool == PAINT)drawCircle(renderer,mouse_x,mouse_y,10);
-            
+            if (selectedTool == PAINT)renderCircle(renderer,mouse_x,mouse_y,brushSize / 2);
+            else if(selectedTool == PENCIL){
+                SDL_Rect brush = {mouse_x - brushSize / 2, mouse_y - brushSize / 2, (mouse_x + brushSize) - mouse_x, (mouse_y + brushSize) - mouse_y};
+                SDL_RenderDrawRect(renderer,&brush);
+            }
+            else if(selectedTool == FILL){
+                SDL_Rect cursor = {mouse_x - 2,mouse_y - 30,32,32};
+                SDL_RenderCopy(renderer,texFillCursor,NULL,&cursor);
+            }
         }
         SDL_RenderPresent(renderer);
        SDL_Delay(17);
