@@ -505,6 +505,11 @@ int main( int argc, char* argv[] )
             {
                 SDL_RenderDrawLine(renderer,shapePoint.x + viewport.x,shapePoint.y + viewport.y,mouse_x,mouse_y);
             }
+            else if (selectedTool == SHAPE && shapeClicked)
+            {
+                renderPoly(renderer,shapePoint.x + viewport.x,shapePoint.y + viewport.y,mouse_x,mouse_y,4);
+            }
+            
             
         }
         SDL_RenderPresent(renderer);

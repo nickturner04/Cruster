@@ -4,6 +4,7 @@ extern "C"
 #endif
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include<math.h>
 
 typedef struct StringMessage{
     SDL_Rect rect;
@@ -125,6 +126,24 @@ void renderCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
   	        tx += 2;
   	        error += (tx - diameter);
         }
+
+    }
+}
+
+void renderPoly(SDL_Renderer* renderer, int cx, int cy, int px, int py, int verts){
+    double rx = px - cx, ry = py - cy;
+    double angle = 2 * M_PI / verts;
+    
+
+    for (size_t i = 0; i < verts; i++)
+    {
+        double b = angle * i;
+        double vx = cx;
+        double vy = cy;
+
+        vx += cos(b) * rx - sin(b) * ry;
+        vy += sin(b) * rx + cos(b) * ry;
+        SDL_RenderDrawLine(renderer,cx,cy,(int)vx,(int)vy);
 
     }
 }

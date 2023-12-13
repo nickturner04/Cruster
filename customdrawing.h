@@ -212,7 +212,6 @@ void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int
     
 
     double rx = px - cx, ry = py - cy;
-    double r = sqrt((rx * rx) + (ry * ry));
     double angle = 360.0 / verts;
     
     int xpoints[verts];
