@@ -99,9 +99,12 @@ void globalFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour, int
 }
 
 void drawSquare(Uint32* pixels, SDL_Rect rect,SDL_Rect canvas, Uint32 colour){
-    for (int i = rect.x; i < rect.x + rect.w; i++)
+    int intitial_i = rect.x < 0 ? 0 : rect.x;
+    int initial_j = rect.y < 0 ? 0 : rect.y;
+    int initial_w = rect.x + rect.w;
+    for (int i = intitial_i; i < rect.x + rect.w; i++)
     {
-        for (int j = rect.y; j < rect.y + rect.h; j++)
+        for (int j = initial_j; j < rect.y + rect.h; j++)
         {
             if ((i < 0 || j < 0 || i > canvas.w || j > canvas.h))continue;
             pixels[j * canvas.w + i] = colour;
@@ -133,29 +136,28 @@ void drawCircle(Uint32* pixels, int x, int y, int r, SDL_Rect canvas, Uint32 col
     plotCirclePoints(pixels,x,y,x1,y1,canvas,colour);
 }
 
-void Bresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2){
-    double gradient = (double)(y1 - y2) / (double)(x1 - x2);
-    double gradient_i =(double)(x1 - x2) / (double)(y1 - y2);
+void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int e = 2 *(dy - dx);
+    int x = x1, y = y1;
+    pixels[y * width + x] = colour;
 
-    if (gradient > 1 || gradient < -1)
+    while (x != x2 && y != y2)
     {
-        int xx1 = x2;
-        int xx2 = x2;
-        int yy1 = y1;
-        int yy2 = y2;
-
-        for (size_t y = yy1; y < yy2; y++)
+        if (e < 0)
         {
-            if (y1 <= y2)
-            {
-                /* code */
-            }
-            
+            x++;
+            e = e + 2 * dy;
         }
-        
+        else
+        {
+            x++;
+            y++;
+            e = e + 2 * (dy - dx);
+        }
+        pixels[y * width + x] = colour;   
     }
-    
-
 }
 
 #ifdef __cplusplus

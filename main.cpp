@@ -11,7 +11,8 @@ typedef enum ToolType{
     PAINT,
     FILL,
     PICKER,
-    SHAPE
+    SHAPE,
+    LINE
 }ToolType;
 
 #define DEFAULTWIDTH 800
@@ -123,6 +124,14 @@ int setToolShape(void* p){
     return 1;
 }
 
+int setToolLine(void* p){
+    selectedTool = LINE;
+    printf("Selected Tool: Line\n");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
+    return 1;
+}
+
 int main( int argc, char* argv[] )
 {
     SDL_Init( SDL_INIT_EVERYTHING);
@@ -188,6 +197,9 @@ int main( int argc, char* argv[] )
     imageSurface = IMG_Load("resources/icons/shape.png");
     SDL_Texture * tex8 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     toolButtons[4] = createButton(&setToolShape,tex8,HLMODE_UNSELECTED);
+    imageSurface = IMG_Load("resources/icons/line.png");
+    SDL_Texture * tex9 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[5] = createButton(&setToolLine,tex9,HLMODE_UNSELECTED);
 
     toolbarButton *fillButtons = new toolbarButton[1];
     imageSurface = IMG_Load("resources/icons/contiguous.png");
@@ -240,6 +252,9 @@ int main( int argc, char* argv[] )
     int y = 0;
 
     bool drawing = false;
+
+    bool shapeClicked = false;
+    SDL_Point shapePoint = {0,0};
 
     SDL_Rect screen = {0,0,WIDTH,HEIGHT};
     SDL_Rect viewport = {VIEWPORTX,VIEWPORTY,CANVASWIDTH,CANVASHEIGHT};
@@ -315,6 +330,20 @@ int main( int argc, char* argv[] )
                         if (localy < 0) localy = 0;
                         fillmode ? contiguousFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance) : globalFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance);
                         SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+                    break;
+                    case LINE:
+                        if (shapeClicked)
+                        {
+                            shapeClicked = false;
+                            drawBresenham(pixels,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,selectedColor);
+                            SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
+                        }
+                        else{
+                            shapeClicked = true;
+                            shapePoint.x = localx;
+                            shapePoint.y = localy;
+                        }
+                        
                     break;
                     default:
                     break;
@@ -420,6 +449,11 @@ int main( int argc, char* argv[] )
                 SDL_Rect cursor = {mouse_x - 2,mouse_y - 30,32,32};
                 SDL_RenderCopy(renderer,texFillCursor,NULL,&cursor);
             }
+            else if (selectedTool == LINE && shapeClicked)
+            {
+                SDL_RenderDrawLine(renderer,shapePoint.x + viewport.x,shapePoint.y + viewport.y,mouse_x,mouse_y);
+            }
+            
         }
         SDL_RenderPresent(renderer);
        SDL_Delay(17);
