@@ -12,6 +12,7 @@ typedef enum ToolType{
     FILL,
     PICKER,
     SHAPE,
+    ELIPSE,
     LINE
 }ToolType;
 
@@ -47,11 +48,16 @@ Uint32 selectedColor = 0;
 Uint32 tolerance = 0;
 SDL_Color selectedColorStruct = {0,0,0,0};
 bool fillmode = true;
+bool fillpoly = false;
 int brushSize = 1;
+StringMessage* toolMessage;
+SDL_Renderer* renderer;
 
 SDL_Texture* texCont;
 SDL_Texture* texGlob;
 SDL_Texture* texFillCursor;
+SDL_Texture* texUnFillPoly;
+SDL_Texture* texFillPoly;
 
 int save(void* p){
     printf("Save Pressed!\n");
@@ -91,6 +97,7 @@ int setColour(void* p){
 int setToolPencil(void* p){
     selectedTool = PENCIL;
     printf("Selected Tool: Pencil\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Pencil");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
@@ -98,6 +105,7 @@ int setToolPencil(void* p){
 int setToolPaint(void* p){
     selectedTool = PAINT;
     printf("Selected Tool: Paint\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Brush");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
@@ -105,6 +113,7 @@ int setToolPaint(void* p){
 int setToolFill(void* p){
     selectedTool = FILL;
     printf("Selected Tool: Fill\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Fill");
     fillbar->mode = 0;
     toleranceSlider->hide = 0;
     return 1;
@@ -112,13 +121,38 @@ int setToolFill(void* p){
 int setToolPicker(void* p){
     selectedTool = PICKER;
     printf("Selected Tool: Colour Picker\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Picker");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
 }
-int setToolShape(void* p){
+int setToolRPoly(void* p){
+    toolbarButton * b = (toolbarButton*)p;
+    if (selectedTool == SHAPE)
+    {
+        if (fillpoly)
+        {
+            fillpoly = false;
+            b->Texture = texUnFillPoly;
+        }
+        else{
+            fillpoly = true;
+            b->Texture = texFillPoly;
+        }
+    }
+    
     selectedTool = SHAPE;
     printf("Selected Tool: Shape\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: RPoly");
+    fillbar->mode = 1;
+    toleranceSlider->hide = 1;
+    return 1;
+}
+
+int setToolElipse(void* p){
+    selectedTool = ELIPSE;
+    printf("Selected Tool: Elipse\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Elipse");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
@@ -127,6 +161,7 @@ int setToolShape(void* p){
 int setToolLine(void* p){
     selectedTool = LINE;
     printf("Selected Tool: Line\n");
+    updateStringMessage(renderer,toolMessage,"Selected Tool: Line");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
@@ -138,14 +173,15 @@ int main( int argc, char* argv[] )
     SDL_Init( SDL_INIT_EVERYTHING);
     TTF_Init();
     SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window,-1,0);
+    renderer = SDL_CreateRenderer(window,-1,0);
     SDL_Texture * canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,CANVASWIDTH,CANVASHEIGHT);
     TTF_Font* font = TTF_OpenFont("resources/Cobol Bold.ttf",32);
     SDL_Color white = {0,0,0,255};
-    SDL_Rect debugMessageBox{0,128,512,64};
-    char message[] = "M_X:000|M_Y:000|L_X:000|L_Y|000";
+    SDL_Rect debugMessageBox{388,0,128,32};
+    char message[] = "Selected Tool: Pencil";
     
     StringMessage* debugMessage = createStringMessage(renderer,message,debugMessageBox,white,font);
+    toolMessage = debugMessage;
     Uint32 * pixels = new Uint32[CANVASHEIGHT * CANVASWIDTH];
     memset(pixels,0xFFFFFFFF,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
     
@@ -195,12 +231,17 @@ int main( int argc, char* argv[] )
     imageSurface = IMG_Load("resources/icons/picker.png");
     SDL_Texture * tex7 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     toolButtons[3] = createButton(&setToolPicker,tex7,HLMODE_UNSELECTED);
-    imageSurface = IMG_Load("resources/icons/shape.png");
-    SDL_Texture * tex8 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[4] = createButton(&setToolShape,tex8,HLMODE_UNSELECTED);
-    imageSurface = IMG_Load("resources/icons/line.png");
+    imageSurface = IMG_Load("resources/icons/regularPoly.png");
+    texUnFillPoly = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    imageSurface = IMG_Load("resources/icons/regularPolyF.png");
+    texFillPoly = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[4] = createButton(&setToolRPoly,texUnFillPoly,HLMODE_UNSELECTED);
+    imageSurface = IMG_Load("resources/icons/elipse.png");
     SDL_Texture * tex9 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    toolButtons[5] = createButton(&setToolLine,tex9,HLMODE_UNSELECTED);
+    toolButtons[5] = createButton(&setToolElipse,tex9,HLMODE_UNSELECTED);
+    imageSurface = IMG_Load("resources/icons/line.png");
+    SDL_Texture * tex10 = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    toolButtons[6] = createButton(&setToolLine,tex10,HLMODE_UNSELECTED);
 
     toolbarButton *fillButtons = new toolbarButton[1];
     imageSurface = IMG_Load("resources/icons/contiguous.png");
@@ -332,11 +373,21 @@ int main( int argc, char* argv[] )
                         fillmode ? contiguousFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance) : globalFill(pixels,localx, localy,snapshot.w,snapshot.h,selectedColor,tolerance);
                         SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                     break;
+                    case SHAPE:
                     case LINE:
                         if (shapeClicked)
                         {
                             shapeClicked = false;
-                            drawBresenham(pixels,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,selectedColor);
+                            if (selectedTool == LINE)
+                            {
+                                drawBresenham(pixels,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,selectedColor);
+                            }
+                            else if (selectedTool == SHAPE)
+                            {
+                                drawPoly(pixels,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,4,fillpoly,selectedColor);
+                            }
+                            
+                            
                             SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
                         }
                         else{

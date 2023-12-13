@@ -4,11 +4,9 @@ extern "C"
 #endif
 #include <SDL2/SDL.h>
 #include <stdlib.h>
+#include <math.h>
 
-inline int abs(int x){
-    int y = x >> 31;
-    return (x ^ y) - y;
-}
+const Uint32 empty = 0xFFFFFF00;
 
 typedef struct PointStack{
     size_t length;
@@ -103,6 +101,14 @@ void globalFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour, int
     
 }
 
+void compImage(Uint32* dst, Uint32* src, size_t length){
+    for (size_t i = 0; i < length; i++)
+    {
+        if(src[i] != empty) dst[i] = src[i];
+    }
+    
+}
+
 void drawSquare(Uint32* pixels, SDL_Rect rect,SDL_Rect canvas, Uint32 colour){
     int intitial_i = rect.x < 0 ? 0 : rect.x;
     int initial_j = rect.y < 0 ? 0 : rect.y;
@@ -143,8 +149,8 @@ void drawCircle(Uint32* pixels, int x, int y, int r, SDL_Rect canvas, Uint32 col
 
 void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
 
-    int dx = abs(x2 - x1), sx = x1<x2 ? 1 : -1;
-    int dy = abs(y2 - y1), sy = x1<y2 ? 1 : -1;
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int e = (dx>dy ? dx : -dy)/2,e2;
     int x = x1, y = y1;
 
@@ -152,7 +158,7 @@ void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2
     for (;;)
     {
         pixels[y * width + x] = colour;
-        if (x >= x2 && y == y2) return;
+        if (x == x2 && y == y2) return;
         e2 = e;
         if (e2 > -dx)
         {
@@ -165,6 +171,73 @@ void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2
             y += sy;
         }
     }
+}
+
+void drawBresenhamSafe(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
+
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int e = (dx>dy ? dx : -dy)/2,e2;
+    int x = x1, y = y1;
+
+
+    for (;;)
+    {
+        if (x < 0 || y < 0 || x > width || y > height) goto d;
+        pixels[y * width + x] = colour;
+        d:
+
+        if (x == x2 && y == y2) return;
+        e2 = e;
+        if (e2 > -dx)
+        {
+            e -= dy;
+            x += sx;
+        }
+        if (e2 < dy)
+        {
+            e += dx;
+            y += sy;
+        }
+    }
+}
+
+void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int py, int verts, int fill, Uint32 colour){
+    const double deg2rad = M_PI / 180.0;
+    Uint32* buffer = (Uint32*)malloc(sizeof(Uint32) * width * height);
+    for (size_t i = 0; i < width * height; i++)
+    {
+        buffer[i] = empty;
+    }
+    
+
+    double rx = px - cx, ry = py - cy;
+    double r = sqrt((rx * rx) + (ry * ry));
+    double angle = 360.0 / verts;
+    
+    int xpoints[verts];
+    int ypoints[verts];
+    for (size_t i = 0; i < verts; i++)
+    {
+        double b = angle * i * deg2rad;
+        double vx = cx;
+        double vy = cy;
+
+        vx += cos(b) * rx - sin(b) * ry;
+        vy += sin(b) * rx + cos(b) * ry;
+        //drawBresenhamSafe(pixels,width,height,cx,cy,(int)vx,(int)vy,colour);
+        xpoints[i] = int(vx);
+        ypoints[i] = int(vy);
+    }
+    for (size_t i = 1; i < verts; i++)
+    {
+        drawBresenhamSafe(buffer,width,height,xpoints[i - 1],ypoints[i - 1],xpoints[i],ypoints[i],colour);
+    }
+    drawBresenhamSafe(buffer,width,height,xpoints[0],ypoints[0],xpoints[verts - 1],ypoints[verts - 1],colour);
+    if (fill)contiguousFill(buffer,cx,cy,width,height,colour,1);
+    compImage(pixels,buffer,width * height);
+    free(buffer);
+    
 }
 
 #ifdef __cplusplus
