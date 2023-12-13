@@ -134,6 +134,7 @@ int setToolLine(void* p){
 
 int main( int argc, char* argv[] )
 {
+
     SDL_Init( SDL_INIT_EVERYTHING);
     TTF_Init();
     SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);

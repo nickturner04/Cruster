@@ -5,6 +5,11 @@ extern "C"
 #include <SDL2/SDL.h>
 #include <stdlib.h>
 
+inline int abs(int x){
+    int y = x >> 31;
+    return (x ^ y) - y;
+}
+
 typedef struct PointStack{
     size_t length;
     int head;
@@ -137,26 +142,28 @@ void drawCircle(Uint32* pixels, int x, int y, int r, SDL_Rect canvas, Uint32 col
 }
 
 void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
-    int dx = x2 - x1;
-    int dy = y2 - y1;
-    int e = 2 *(dy - dx);
-    int x = x1, y = y1;
-    pixels[y * width + x] = colour;
 
-    while (x != x2 && y != y2)
+    int dx = abs(x2 - x1), sx = x1<x2 ? 1 : -1;
+    int dy = abs(y2 - y1), sy = x1<y2 ? 1 : -1;
+    int e = (dx>dy ? dx : -dy)/2,e2;
+    int x = x1, y = y1;
+
+
+    for (;;)
     {
-        if (e < 0)
+        pixels[y * width + x] = colour;
+        if (x >= x2 && y == y2) return;
+        e2 = e;
+        if (e2 > -dx)
         {
-            x++;
-            e = e + 2 * dy;
+            e -= dy;
+            x += sx;
         }
-        else
+        if (e2 < dy)
         {
-            x++;
-            y++;
-            e = e + 2 * (dy - dx);
+            e += dx;
+            y += sy;
         }
-        pixels[y * width + x] = colour;   
     }
 }
 
