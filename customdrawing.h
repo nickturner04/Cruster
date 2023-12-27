@@ -6,7 +6,8 @@ extern "C"
 #include <stdlib.h>
 #include <math.h>
 
-const Uint32 empty = 0xFFFFFF00;
+//pixel with all white and transparent alpha, represents an empty pixel within a buffer
+const Uint32 empty = 0x00FFFFFF;
 
 typedef struct PointStack{
     size_t length;
@@ -63,7 +64,7 @@ SDL_Point GetTextureCoordinate(int vp_x, int vp_y, int vp_w, int vp_h, int t_w, 
     out.y = int((float)t_h * ((float)vp_y / (float)vp_h));
     return out;
 }
-
+//Source code from "Wikipedia" starts here, it originates from: https://en.wikipedia.org/wiki/Flood_fill and uses a stack to fill in adjacent pixels with the same colour
 void contiguousFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour, int tolerance){
     Uint32 selectedColor = pixels[y * cw + x];
     if (selectedColor == colour) return;
@@ -84,6 +85,7 @@ void contiguousFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour,
         }    }
     PS_Destroy(s);
 }
+//Source code from "Wikipedia" ends here
 
 void globalFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour, int tolerance){
     Uint32 selectedColor = pixels[y * cw + x];
@@ -101,6 +103,7 @@ void globalFill(Uint32* pixels, int x, int y, int cw, int ch, Uint32 colour, int
     
 }
 
+//copies all non empty pixels from a buffer to an image
 void compImage(Uint32* dst, Uint32* src, size_t length){
     for (size_t i = 0; i < length; i++)
     {
@@ -147,13 +150,13 @@ void drawCircle(Uint32* pixels, int x, int y, int r, SDL_Rect canvas, Uint32 col
     plotCirclePoints(pixels,x,y,x1,y1,canvas,colour);
 }
 
+//Source from Eike Anderson starts here, it originates from Programming Principles Lecture 10 and draws a pixel line
 void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
 
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int e = (dx>dy ? dx : -dy)/2,e2;
     int x = x1, y = y1;
-
 
     for (;;)
     {
@@ -202,7 +205,9 @@ void drawBresenhamSafe(Uint32* pixels, int width, int height, int x1, int y1, in
     }
 }
 
-void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int py, int verts, int fill, Uint32 colour){
+//Source from Eike Anderson ends here
+
+void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int py, int verts, int fill, int fillpercent, Uint32 colour){
     const double deg2rad = M_PI / 180.0;
     Uint32* buffer = (Uint32*)malloc(sizeof(Uint32) * width * height);
     for (size_t i = 0; i < width * height; i++)
@@ -213,30 +218,92 @@ void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int
 
     double rx = px - cx, ry = py - cy;
     double angle = 360.0 / verts;
+    double mult = (double)fillpercent / 100.0;
     
     int xpoints[verts];
     int ypoints[verts];
+    int xpointsF[verts];
+    int ypointsF[verts];
     for (size_t i = 0; i < verts; i++)
     {
         double b = angle * i * deg2rad;
         double vx = cx;
         double vy = cy;
+        double vxF = cx;
+        double vyF = cy;
 
-        vx += cos(b) * rx - sin(b) * ry;
-        vy += sin(b) * rx + cos(b) * ry;
+
+        double ax = cos(b) * rx - sin(b) * ry;
+        double ay = sin(b) * rx + cos(b) * ry;
+        vx += ax;
+        vy += ay;
+        vxF += ax * mult;
+        vyF += ay * mult;
         //drawBresenhamSafe(pixels,width,height,cx,cy,(int)vx,(int)vy,colour);
         xpoints[i] = int(vx);
         ypoints[i] = int(vy);
+
+        xpointsF[i] = int(vxF);
+        ypointsF[i] = int(vyF);
     }
     for (size_t i = 1; i < verts; i++)
     {
         drawBresenhamSafe(buffer,width,height,xpoints[i - 1],ypoints[i - 1],xpoints[i],ypoints[i],colour);
     }
     drawBresenhamSafe(buffer,width,height,xpoints[0],ypoints[0],xpoints[verts - 1],ypoints[verts - 1],colour);
-    if (fill)contiguousFill(buffer,cx,cy,width,height,colour,1);
+    if (fill){
+        contiguousFill(buffer,cx,cy,width,height,colour,1);
+        if (mult)
+        {
+            contiguousFill(buffer,cx,cy,width,height,colour,1);
+            for (size_t i = 1; i < verts; i++)
+            {
+                drawBresenhamSafe(buffer,width,height,xpointsF[i - 1],ypointsF[i - 1],xpointsF[i],ypointsF[i],empty);
+            }
+            drawBresenhamSafe(buffer,width,height,xpointsF[0],ypointsF[0],xpointsF[verts - 1],ypointsF[verts - 1],empty);
+            contiguousFill(buffer,cx,cy,width,height,empty,1);
+        }
+        
+    }
+    
     compImage(pixels,buffer,width * height);
     free(buffer);
+}
+
+void drawThickLine(Uint32* pixels, int cw, int ch, int x1, int y1, int x2, int y2, int w, Uint32 colour){
+    Uint32* buffer = (Uint32*)malloc(sizeof(Uint32) * cw * ch);
+    for (size_t i = 0; i < cw * ch; i++)
+    {
+        buffer[i] = empty;
+    }
     
+    double halfw = (double)w / 2.0;
+    w = (int)halfw;
+
+    double dx = y2 - y1;
+    double dy = x2 - x1;
+
+    double mpx = x1 + dy / 2.0;
+    double mpy = y1 + dx / 2.0;
+
+    double mag = sqrt(dx * dx + dy * dy);
+    dx /= mag; dx *= halfw;
+    dy /= mag; dy *= halfw;
+    
+    drawBresenhamSafe(buffer,cw,ch,x1 - (int)dx,y1 - (int)dy,x2 - (int)dx,y2 - (int)dy,colour);
+    drawBresenhamSafe(buffer,cw,ch,x1 + (int)dx,y1 + (int)dy,x2 + (int)dx,y2 + (int)dy,colour);
+    //drawBresenhamSafe(buffer,cw,ch,x1 + (int)dx, y1 + (int)dy,x1 - (int)dx,y1 - (int)dy,colour);
+    //drawBresenham(buffer,cw,ch,x2 + (int)dx,y2 + (int)dy,y1 - (int)dy,y2 - (int)dy,colour);
+
+    drawPoly(buffer,cw,ch,x1,y1,x1 + w,y1 + w,36,1,0,colour);
+    drawPoly(buffer,cw,ch,x2,y2,x2 + w,y2 + w,36,1,0,colour);
+
+    if (halfw > 2.0)
+    {
+        contiguousFill(buffer,mpx,mpy,cw,ch,colour,1);
+    }
+    compImage(pixels,buffer,cw * ch);
+    free(buffer);
 }
 
 #ifdef __cplusplus

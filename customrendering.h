@@ -37,6 +37,11 @@ void renderStringMessage(SDL_Renderer* renderer, StringMessage* message){
     SDL_RenderCopy(renderer,message->texture,NULL,&message->rect);
 }
 
+void destroyStringMessage(StringMessage* message){
+    SDL_DestroyTexture(message->texture);
+    free(message);
+}
+
 typedef struct toolbarRect{
     Uint16 x;
     Uint16 y;
@@ -79,15 +84,35 @@ toolbar TB_Create(toolbarRect rect, toolbarButton * buttons){
     toolbar newToolbar = {rect,buttons,0};
     return newToolbar;
 }
-
+//A slider that changes the value of a variable
 typedef struct Slider{
     SDL_Rect rect;
+    int type;
     int hide;
     int fillPercent;
-    Uint32* link;
     Uint32 min;
     Uint32 max;
+    Uint32* link;
+    Uint32 colour;
 }Slider;
+//A slider that calls a function whenever the value changes
+typedef struct EventSlider{
+    SDL_Rect rect;
+    int type; //The first two fields of both sliders are the same so that in a union, the second field can be used to work out which kind of slider it is
+    int hide;
+    int val;
+    int min;
+    int max;
+    void (*Event)(int x);
+    Uint32 colour;
+}EventSlider;
+
+typedef union MultiSlider
+{//Union so that both sliders can be stored in a single array
+    EventSlider es;
+    Slider s;
+};
+
 
 void renderCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
     const int diameter = radius * 2;
@@ -130,6 +155,7 @@ void renderCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
     }
 }
 
+//Renders an outline of a polygon for drawing
 void renderPoly(SDL_Renderer* renderer, int cx, int cy, int px, int py, int verts){
     double rx = px - cx, ry = py - cy;
     double angle = 2 * M_PI / verts;
@@ -182,6 +208,29 @@ void drawCircleF(SDL_Renderer* renderer, int cx, int cy, int radius){
     }
 }
 
+void drawEventSlider(SDL_Renderer * renderer, EventSlider * slider, int scale, int m_x, int m_down){
+
+    if (m_down && m_x != -1)
+    {
+        float f = m_x / (float)slider->rect.w;
+
+        slider->val = slider->min + (int)((float)(slider->max - slider->min) * f);
+        slider->Event(slider->val);
+    }
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    Uint8 r, g, b, a;
+    SDL_GetRGBA(slider->colour,format,&r,&g,&b,&a);
+    SDL_FreeFormat(format);
+    SDL_SetRenderDrawColor(renderer,r,g,b,a);
+    float progress = (float)slider->val / (float)slider->max;
+    int fill = (int)(progress * (float)slider->rect.w);
+    SDL_Rect progressRect = {slider->rect.x,slider->rect.y,fill,slider->rect.h};
+    SDL_RenderFillRect(renderer,&progressRect);
+
+    SDL_SetRenderDrawColor(renderer,0,0,0,255);
+    SDL_RenderDrawRect(renderer,&slider->rect);
+}
+
 void drawSlider(SDL_Renderer * renderer, Slider * slider, int scale, int m_x, int m_down){
 
     if (m_down && m_x != -1)
@@ -191,7 +240,6 @@ void drawSlider(SDL_Renderer * renderer, Slider * slider, int scale, int m_x, in
 
         Uint32 t = slider->min + (Uint32)((float)(slider->max - slider->min) * f);
         *slider->link = t;
-        printf("Tolerance: %u",*slider->link);
     }
     
     
@@ -204,17 +252,24 @@ void drawSlider(SDL_Renderer * renderer, Slider * slider, int scale, int m_x, in
     SDL_SetRenderDrawColor(renderer,0,0,0,255);
     SDL_RenderDrawRect(renderer,&slider->rect);
 }
-
-void renderAllSliders(SDL_Renderer * renderer, Slider* sliders, int numSliders, int scale, int m_x, int m_y, int m_down){
+//renders all the sliders from an array, calling a different function depending on the type of the slider
+void renderAllSliders(SDL_Renderer * renderer, MultiSlider* sliders, int numSliders, int scale, int m_x, int m_y, int m_down){
     for (size_t i = 0; i < numSliders; i++)
     {
-        if (sliders[i].hide) continue;
+        if (sliders[i].s.hide) continue;
         int pos_x = -1;
-        if (m_y > sliders[i].rect.y && m_y < sliders[i].rect.y + sliders[i].rect.h && m_x <= sliders[i].rect.x + sliders[i].rect.w && m_x >= sliders[i].rect.x)
+        if (m_y > sliders[i].s.rect.y && m_y < sliders[i].s.rect.y + sliders[i].s.rect.h && m_x <= sliders[i].s.rect.x + sliders[i].s.rect.w && m_x >= sliders[i].s.rect.x)
         {
-            pos_x = m_x - sliders[i].rect.x;
+            pos_x = m_x - sliders[i].s.rect.x;
         }
-        drawSlider(renderer,&sliders[i],scale,pos_x,m_down);
+        if (sliders[i].s.type == 0)
+        {
+            drawSlider(renderer,&sliders[i].s,scale,pos_x,m_down);
+        }
+        else{
+            drawEventSlider(renderer,&sliders[i].es,scale,pos_x,m_down);
+        }
+        
     }
     
 }
@@ -288,12 +343,6 @@ toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int s
 }
 
 toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int numToolbars, int scale, int m_x, int m_y, int m_down){
-
-    if (m_down)
-    {
-        printf("\nClick: %i",m_down,"%s\n");
-    }
-    
     
     toolbarButton* selectedButton = NULL;
     for (size_t i = 0; i < numToolbars; i++)

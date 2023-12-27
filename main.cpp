@@ -26,13 +26,25 @@ int VIEWPORTX = 0, VIEWPORTY = 0 + VIEWPORTHEIGHT;
 
 int ELEMENTSCALE = 2;
 
+TTF_Font* systemFont;
+
 toolbarRect defaultbar = {0,32,8,1,16,16};
-toolbarRect filebar = {0,0,3,1,16,16};
+toolbarRect filebar = {0,0,4,1,16,16};
 toolbarRect palleteBar = {256,0,8,4,8,8};
 toolbarRect fillOptionsBar = {64,64,1,1,16,16};
+toolbarRect polyOptionsBar = {96,64,3,1,16,16};
 SDL_Rect toleranceSliderRect = {96,64,128,16};
+SDL_Rect polySliderRect = {96,96,128,16};
+SDL_Rect rSliderRect = {256,64,128,16};
+SDL_Rect gSliderRect = {256,80,128,16};
+SDL_Rect bSliderRect = {256,96,128,16};
 toolbar* fillbar;
+toolbar* polybar;
 Slider* toleranceSlider;
+Slider* polySlider;
+
+Uint32* pixelGrid;
+char* fileName = NULL;
 
 //Default empty function that is called for an event
 int DefaultEmpty(){ return -1;}
@@ -45,24 +57,24 @@ int (*E_Mouseup)() = &DefaultEmpty;
 
 ToolType selectedTool = PENCIL;
 Uint32 selectedColor = 0;
+Uint32 valueR = 0;
+Uint32 valueG = 0;
+Uint32 valueB = 0;
 Uint32 tolerance = 0;
-SDL_Color selectedColorStruct = {0,0,0,0};
 bool fillmode = true;
+Uint32 polyFillPercent = 50;
 bool fillpoly = false;
+int polyVerts = 3;
 int brushSize = 1;
 StringMessage* toolMessage;
 SDL_Renderer* renderer;
+SDL_Texture* canvas;
 
 SDL_Texture* texCont;
 SDL_Texture* texGlob;
 SDL_Texture* texFillCursor;
 SDL_Texture* texUnFillPoly;
 SDL_Texture* texFillPoly;
-
-int save(void* p){
-    printf("Save Pressed!\n");
-    return 1;
-}
 
 int setFillMode(void* p){
     toolbarButton* button = (toolbarButton*)p;
@@ -80,18 +92,150 @@ int setFillMode(void* p){
     return 0;
 }
 
-int setColour(void* p){
-    toolbarButton button = *((toolbarButton*)p);
-    int bpp = 8;
-    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+int saveAs(void* p){
+    char message[] = "CHECK CONSOLE";
+    SDL_Rect r = {0,0,CANVASWIDTH,CANVASHEIGHT};
+    SDL_Color red = {255,0,0,0};
+    StringMessage* consoleMessage = createStringMessage(renderer,message,r,red,systemFont);
+    renderStringMessage(renderer,consoleMessage);
+    SDL_RenderPresent(renderer);
+    printf("\n");
+    printf("Enter filename to save(.png will be automatically appended) ");
+    char* newfileName = new char[128];
+    scanf("%127s",newfileName);
+    size_t l = strlen(newfileName);
+    strcat(newfileName,".png\0");
+    SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(pixelGrid,CANVASWIDTH,CANVASHEIGHT,32,CANVASWIDTH * sizeof(Uint32),SDL_PIXELFORMAT_ARGB8888);
+    IMG_SavePNG(surf,newfileName);
+    fileName = newfileName;
+    SDL_FreeSurface(surf);
+    destroyStringMessage(consoleMessage);
+    return 0;
+}
+
+int save(void* p){
+    if (fileName == NULL) return saveAs(p);
     
-    selectedColor = SDL_MapRGBA(format,button.r,button.g,button.b,255);
-    printf("%08x\n",selectedColor);
-    SDL_GetRGBA(selectedColor,format,&selectedColorStruct.r,&selectedColorStruct.g,&selectedColorStruct.b,&selectedColorStruct.a);
-    button.r = selectedColorStruct.r;
-    button.g = selectedColorStruct.g;
-    button.b = selectedColorStruct.b;
+    SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(pixelGrid,CANVASWIDTH,CANVASHEIGHT,32,CANVASWIDTH * sizeof(Uint32),SDL_PIXELFORMAT_ARGB8888);
+    IMG_SavePNG(surf,fileName);
+    SDL_FreeSurface(surf);
+    printf("Saved To: ");
+    printf("%s",fileName);
+    printf("\n");
+    return 0;
+}
+
+int open(void* p){
+    char message[] = "CHECK CONSOLE";
+    SDL_Rect r = {0,0,CANVASWIDTH,CANVASHEIGHT};
+    SDL_Color red = {255,0,0,0};
+    StringMessage* consoleMessage = createStringMessage(renderer,message,r,red,systemFont);
+    renderStringMessage(renderer,consoleMessage);
+    SDL_RenderPresent(renderer);
+    printf("\n");
+    printf("Enter filename to open(specify file extension) ");
+    char* newfileName = new char[128];
+    scanf("%127s",newfileName);
+    size_t l = strlen(newfileName);
+    for (size_t i = 0; i < l; i++)
+    {
+        if (newfileName[i] == '.') newfileName[i] = 0;
+        
+    }
+    strcat(newfileName,".png");
+    if (fileName != NULL) delete fileName;
+    fileName = newfileName;
+
+    SDL_Surface* imageSurface = IMG_Load(newfileName);
+    SDL_UnlockSurface(imageSurface);
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    for (size_t i = 0; i < CANVASWIDTH * CANVASHEIGHT; i++)
+    {
+        Uint8 r;
+        Uint8 g;
+        Uint8 b;
+        Uint32* pixels = (Uint32*)imageSurface->pixels;
+        SDL_GetRGB(pixels[i],imageSurface->format,&r,&g,&b);
+
+        pixelGrid[i] = SDL_MapRGBA(format,r,g,b,255);
+    }
+    SDL_UpdateTexture(canvas,NULL,pixelGrid,CANVASWIDTH * sizeof(Uint32));
+    SDL_FreeFormat(format);
+    SDL_FreeSurface(imageSurface);
+    destroyStringMessage(consoleMessage);
+    return 0;
+}
+
+int newDoc(void* p){
+    char message[] = "CHECK CONSOLE";
+    SDL_Rect r = {0,0,CANVASWIDTH,CANVASHEIGHT};
+    SDL_Color red = {255,0,0,0};
+    StringMessage* consoleMessage = createStringMessage(renderer,message,r,red,systemFont);
+    renderStringMessage(renderer,consoleMessage);
+    SDL_RenderPresent(renderer);
+    printf("\n");
+    printf("Enter new project name ");
+    char* newfileName = new char[128];
+    scanf("%127s",newfileName);
+    size_t l = strlen(newfileName);
+    strcat(newfileName,".png\0");
+    if(fileName != NULL) delete fileName;
+    fileName = newfileName;
+
+    memset(pixelGrid,0xFFFFFFFF,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
+    SDL_UpdateTexture(canvas,NULL,pixelGrid,CANVASWIDTH * sizeof(Uint32));
+    destroyStringMessage(consoleMessage);
+    return 0;
+}
+
+
+
+int setColour(void* p){
+    toolbarButton* button = ((toolbarButton*)p);
+    int bpp = 8;
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    
+    selectedColor = SDL_MapRGBA(format,button->r,button->g,button->b,255);
+    //printf("%08x\n",selectedColor);
+    SDL_FreeFormat(format);
     return 1;
+}
+
+void setColourR(int x){
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    Uint8 r, g, b, a;
+    SDL_GetRGBA(selectedColor,format,&r,&g,&b,&a);
+    r = (Uint8)x;
+    selectedColor = SDL_MapRGBA(format,r,g,b,255);
+    SDL_FreeFormat(format);
+}
+
+void setColourG(int x){
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    Uint8 r, g, b, a;
+    SDL_GetRGBA(selectedColor,format,&r,&g,&b,&a);
+    g = (Uint8)x;
+    selectedColor = SDL_MapRGBA(format,r,g,b,255);
+    SDL_FreeFormat(format);
+}
+
+void setColourB(int x){
+    SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    Uint8 r, g, b, a;
+    SDL_GetRGBA(selectedColor,format,&r,&g,&b,&a);
+    b = (Uint8)x;
+    selectedColor = SDL_MapRGBA(format,r,g,b,255);
+    SDL_FreeFormat(format);
+}
+
+void showPolyOptions(){
+    polybar->mode = 0;
+    polySlider->hide = !fillpoly;
+}
+
+void hidePolyOptions(){
+    polybar->mode = 1;
+    polySlider->hide = 1;
 }
 
 int setToolPencil(void* p){
@@ -100,6 +244,7 @@ int setToolPencil(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Pencil");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
+    hidePolyOptions();
     return 1;
 }
 int setToolPaint(void* p){
@@ -108,6 +253,7 @@ int setToolPaint(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Brush");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
+    hidePolyOptions();
     return 1;
 }
 int setToolFill(void* p){
@@ -116,6 +262,7 @@ int setToolFill(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Fill");
     fillbar->mode = 0;
     toleranceSlider->hide = 0;
+    hidePolyOptions();
     return 1;
 }
 int setToolPicker(void* p){
@@ -124,9 +271,11 @@ int setToolPicker(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Picker");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
+    hidePolyOptions();
     return 1;
 }
 int setToolRPoly(void* p){
+    
     toolbarButton * b = (toolbarButton*)p;
     if (selectedTool == SHAPE)
     {
@@ -140,14 +289,40 @@ int setToolRPoly(void* p){
             b->Texture = texFillPoly;
         }
     }
+    showPolyOptions();
+
     
     selectedTool = SHAPE;
-    printf("Selected Tool: Shape\n");
+    printf("Selected Tool: Shape(");
+    printf("%i",polyVerts);
+    printf(" Vertices)\n");
     updateStringMessage(renderer,toolMessage,"Selected Tool: RPoly");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
     return 1;
 }
+
+    int setPolyVertsMinus(void* p){
+        polyVerts--;
+        if (polyVerts <= 2) polyVerts = 3;
+        printf("Number of Vertices: ");
+        printf("%i", polyVerts);
+        printf("\n");
+        return 1;
+    }
+
+    int setPolyVertsPlus(void* p){
+        polyVerts++;
+        printf("Number of Vertices: ");
+        printf("%i", polyVerts);
+        printf("\n");
+        return 1;
+    }
+
+    int setPolyVertsConsole(void* p){
+
+        return 1;
+    }
 
 int setToolElipse(void* p){
     selectedTool = ELIPSE;
@@ -155,6 +330,7 @@ int setToolElipse(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Elipse");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
+    hidePolyOptions();
     return 1;
 }
 
@@ -164,6 +340,7 @@ int setToolLine(void* p){
     updateStringMessage(renderer,toolMessage,"Selected Tool: Line");
     fillbar->mode = 1;
     toleranceSlider->hide = 1;
+    hidePolyOptions();
     return 1;
 }
 
@@ -172,10 +349,11 @@ int main( int argc, char* argv[] )
 
     SDL_Init( SDL_INIT_EVERYTHING);
     TTF_Init();
-    SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window * window = SDL_CreateWindow("CRUSTER", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window,-1,0);
-    SDL_Texture * canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,CANVASWIDTH,CANVASHEIGHT);
+    canvas = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,CANVASWIDTH,CANVASHEIGHT);
     TTF_Font* font = TTF_OpenFont("resources/Cobol Bold.ttf",32);
+    systemFont = font;
     SDL_Color white = {0,0,0,255};
     SDL_Rect debugMessageBox{388,0,128,32};
     char message[] = "Selected Tool: Pencil";
@@ -183,8 +361,9 @@ int main( int argc, char* argv[] )
     StringMessage* debugMessage = createStringMessage(renderer,message,debugMessageBox,white,font);
     toolMessage = debugMessage;
     Uint32 * pixels = new Uint32[CANVASHEIGHT * CANVASWIDTH];
+    pixelGrid = pixels;
     memset(pixels,0xFFFFFFFF,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
-    
+    SDL_UpdateTexture(canvas,NULL,pixelGrid,CANVASWIDTH * sizeof(Uint32));
     
     toolbarButton *filebuttons = new toolbarButton[filebar.w * filebar.h];
     for (size_t i = 0; i < filebar.w * filebar.h; i++)
@@ -209,16 +388,27 @@ int main( int argc, char* argv[] )
         palleteButtons[i].g = (int)r;
         palleteButtons[i].b = (int)r;
     }
+
+    toolbarButton* polyButtons = new toolbarButton[polyOptionsBar.w * polyOptionsBar.h];
+
+    for (size_t i = 0; i < polyOptionsBar.w * polyOptionsBar.h; i++)
+    {
+        polyButtons[i] = createButton(nullptr,nullptr,HLMODE_UNCHANGING);
+    }
+    
     
     SDL_Surface * imageSurface = IMG_Load("resources/icons/new.bmp");
     SDL_Texture * tex1 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[0] = createButton(nullptr,tex1,HLMODE_UNCHANGING);
+    filebuttons[0] = createButton(&newDoc,tex1,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/open.bmp");
     SDL_Texture * tex2 = SDL_CreateTextureFromSurface(renderer,imageSurface);
-    filebuttons[1] = createButton(nullptr,tex2,HLMODE_UNCHANGING);
+    filebuttons[1] = createButton(open,tex2,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/save.bmp");
     SDL_Texture * tex3 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     filebuttons[2] = createButton(&save,tex3,HLMODE_UNCHANGING);
+    imageSurface = IMG_Load("resources/icons/saveas.png");
+    SDL_Texture * texSaveAs = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    filebuttons[3] = createButton(&saveAs,texSaveAs,HLMODE_UNCHANGING);
     imageSurface = SDL_LoadBMP("resources/icons/pencil.bmp");
     SDL_Texture * tex4 = SDL_CreateTextureFromSurface(renderer,imageSurface);
     toolButtons[0] = createButton(&setToolPencil,tex4,HLMODE_SELECTED);
@@ -253,17 +443,39 @@ int main( int argc, char* argv[] )
     imageSurface = IMG_Load("resources/icons/fillcursor.png");
     texFillCursor = SDL_CreateTextureFromSurface(renderer,imageSurface);
 
-    
+    imageSurface = IMG_Load("resources/icons/arrowL.png");
+    SDL_Texture * texL = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    polyButtons[0] = createButton(&setPolyVertsMinus,texL,HLMODE_UNCHANGING);
+    imageSurface = IMG_Load("resources/icons/textEntry.png");
+    SDL_Texture * texTE = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    polyButtons[1] = createButton(nullptr,texTE,HLMODE_UNCHANGING);
+    imageSurface = IMG_Load("resources/icons/arrowR.png");
+    SDL_Texture * texR = SDL_CreateTextureFromSurface(renderer,imageSurface);
+    polyButtons[2] = createButton(&setPolyVertsPlus,texR,HLMODE_UNCHANGING);
 
-    Slider *sliders = new Slider[1];
-    sliders[0] = {toleranceSliderRect,1,50,&tolerance,1,SDL_MAX_UINT32};
-    toleranceSlider = &sliders[0];
-    
+    MultiSlider *sliders = new MultiSlider[5];
+    {
+        Slider sldTol = {toleranceSliderRect,0,1,50,1,SDL_MAX_UINT32,&tolerance,0x000000FF};
+        Slider sldPoly = {polySliderRect,0,1,50,0,100,&polyFillPercent,0x00000011};
+        sliders[0].s = sldTol;
+        sliders[1].s = sldPoly;
 
-    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons),TB_Create(palleteBar,palleteButtons),TB_Create(fillOptionsBar,fillButtons)};
+        EventSlider sldR = {rSliderRect,1,0,0,0,255,&setColourR,0xFFFF0000};
+        EventSlider sldG = {gSliderRect,1,0,0,0,255,&setColourG,0xFF00FF00};
+        EventSlider sldB = {bSliderRect,1,0,0,0,255,&setColourB,0xFF0000FF};
+        sliders[2].es = sldR;
+        sliders[3].es = sldG;
+        sliders[4].es = sldB;
+    }
+    toleranceSlider = &sliders[0].s;
+    polySlider = &sliders[1].s;
+
+    toolbar toolbars[] = {TB_Create(defaultbar,toolButtons),TB_Create(filebar,filebuttons),TB_Create(palleteBar,palleteButtons),TB_Create(fillOptionsBar,fillButtons),TB_Create(polyOptionsBar,polyButtons)};
     toolbars[3].mode = 1;
+    toolbars[4].mode = 1;
     fillbar = &toolbars[3];
-    int numToolbars = 4;
+    polybar = &toolbars[4];
+    int numToolbars = 5;
     
 
     if (imageSurface == NULL)
@@ -290,6 +502,9 @@ int main( int argc, char* argv[] )
     int mouse_y = 0;
     int mouse_down = 0;
 
+    int last_mouse_x = -1;
+    int last_mouse_y = -1;
+
     int x = 0;
     int y = 0;
 
@@ -297,7 +512,6 @@ int main( int argc, char* argv[] )
 
     bool shapeClicked = false;
     SDL_Point shapePoint = {0,0};
-
     SDL_Rect screen = {0,0,WIDTH,HEIGHT};
     SDL_Rect viewport = {VIEWPORTX,VIEWPORTY,CANVASWIDTH,CANVASHEIGHT};
     SDL_Rect snapshot = {0,0,CANVASWIDTH,CANVASHEIGHT};
@@ -323,7 +537,11 @@ int main( int argc, char* argv[] )
             continue;
 
             case SDL_WINDOWEVENT:
-                if (windowEvent.window.event == SDL_WINDOWEVENT_SIZE_CHANGED);
+                if (windowEvent.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+                    SDL_GetWindowSize(window,&WIDTH,&HEIGHT);
+                    viewport.w = WIDTH - viewport.x;
+                    viewport.h = HEIGHT - viewport.y;
+                };
             break;
 
             case SDL_MOUSEMOTION:
@@ -358,6 +576,7 @@ int main( int argc, char* argv[] )
             break;
 
             case SDL_MOUSEBUTTONUP:
+                last_mouse_x = -1;
                 if (mouseInViewport){
                     switch (selectedTool)
                     {
@@ -384,7 +603,7 @@ int main( int argc, char* argv[] )
                             }
                             else if (selectedTool == SHAPE)
                             {
-                                drawPoly(pixels,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,4,fillpoly,selectedColor);
+                                drawPoly(pixelGrid,CANVASWIDTH,CANVASHEIGHT,shapePoint.x,shapePoint.y,localx,localy,polyVerts,fillpoly,(100 - polyFillPercent),selectedColor);
                             }
                             
                             
@@ -451,10 +670,32 @@ int main( int argc, char* argv[] )
                     SDL_Rect brush = {localx - brushSize / 2, localy - brushSize / 2, (localx + brushSize) - localx, (localy + brushSize) - localy};
                     if (selectedTool == PENCIL)
                     {
-                        drawSquare(pixels,brush,snapshot,selectedColor);
+                        //drawSquare(pixels,brush,snapshot,selectedColor);
+                        if (last_mouse_x == -1 || last_mouse_y == -1)
+                        {
+                            last_mouse_x = localx;
+                            last_mouse_y = localy;
+                        }
+                        else{
+                            drawBresenham(pixelGrid,snapshot.w,snapshot.h,last_mouse_x,last_mouse_y,localx,localy,selectedColor);
+                            last_mouse_x = localx;
+                            last_mouse_y = localy;
+                        }
+                        
+                        
                     }
                     else{
-                        drawCircle(pixels,localx,localy,brushSize,snapshot,selectedColor);
+                        if (last_mouse_x == -1 || last_mouse_y == -1)
+                        {
+                            last_mouse_x = localx;
+                            last_mouse_y = localy;
+                        }
+                        else{
+                            drawThickLine(pixels,snapshot.w,snapshot.h,localx,localy,last_mouse_x,last_mouse_y,brushSize,selectedColor);
+                            last_mouse_x = localx;
+                            last_mouse_y = localy;
+                        }
+                        
                     }
                     
                     SDL_UpdateTexture(canvas,NULL,pixels,CANVASWIDTH * sizeof(Uint32));
@@ -482,7 +723,7 @@ int main( int argc, char* argv[] )
         
         
         toolbarButton* selectedButton = renderAllToolbars(renderer,toolbars,numToolbars,2,mouse_x,mouse_y,clicked);
-        renderAllSliders(renderer,sliders,1,ELEMENTSCALE,mouse_x,mouse_y,mouse_down);
+        renderAllSliders(renderer,sliders,5,ELEMENTSCALE,mouse_x,mouse_y,mouse_down);
         //SDL_RenderCopy(renderer,tex,NULL,NULL);
         
         
@@ -507,13 +748,13 @@ int main( int argc, char* argv[] )
             }
             else if (selectedTool == SHAPE && shapeClicked)
             {
-                renderPoly(renderer,shapePoint.x + viewport.x,shapePoint.y + viewport.y,mouse_x,mouse_y,4);
+                renderPoly(renderer,shapePoint.x + viewport.x,shapePoint.y + viewport.y,mouse_x,mouse_y,polyVerts);
             }
             
             
         }
         SDL_RenderPresent(renderer);
-       SDL_Delay(17);
+        SDL_Delay(15);
     }
 
     delete[] pixels;

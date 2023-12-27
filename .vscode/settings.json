@@ -58,5 +58,7 @@
             "binaryPath": "c:\\Users\\nickt\\Documents\\c\\Cruster\\main",
             "binaryArgs": []
         }
-    ]
+    ],
+    "cmake.configureOnOpen": false,
+    "makefile.makePath": "C:\\Users\\nickt\\Documents\\c\\w64devkit\\bin\\make.exe"
 }
