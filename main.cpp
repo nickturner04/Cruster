@@ -27,7 +27,7 @@ int VIEWPORTX = 0, VIEWPORTY = 0 + VIEWPORTHEIGHT;
 int ELEMENTSCALE = 2;
 
 TTF_Font* systemFont;
-
+//The on screen positions of all UI elements
 toolbarRect defaultbar = {0,32,8,1,16,16};
 toolbarRect filebar = {0,0,4,1,16,16};
 toolbarRect palleteBar = {256,0,8,4,8,8};
@@ -38,11 +38,12 @@ SDL_Rect polySliderRect = {96,96,128,16};
 SDL_Rect rSliderRect = {256,64,128,16};
 SDL_Rect gSliderRect = {256,80,128,16};
 SDL_Rect bSliderRect = {256,96,128,16};
+//Pointers to some of the elements so they can be modified by functions
 toolbar* fillbar;
 toolbar* polybar;
 Slider* toleranceSlider;
 Slider* polySlider;
-
+//Pointer to all screen pixels.
 Uint32* pixelGrid;
 char* fileName = NULL;
 
@@ -54,12 +55,9 @@ int (*E_Click)() = &DefaultEmpty;
 //Inside viewport
 int (*E_Mousedown)() = &DefaultEmpty;
 int (*E_Mouseup)() = &DefaultEmpty;
-
+//These events never ended up being used
 ToolType selectedTool = PENCIL;
 Uint32 selectedColor = 0;
-Uint32 valueR = 0;
-Uint32 valueG = 0;
-Uint32 valueB = 0;
 Uint32 tolerance = 0;
 bool fillmode = true;
 Uint32 polyFillPercent = 50;
@@ -76,6 +74,8 @@ SDL_Texture* texFillCursor;
 SDL_Texture* texUnFillPoly;
 SDL_Texture* texFillPoly;
 
+//Button methods take a pointer to the button that called them, allowing them to retrieve information about it and change it, in this case, the highlight of the button and texture of it
+//It is necessary that all of them have this argument to allow them to be added to the button's function pointer.
 int setFillMode(void* p){
     toolbarButton* button = (toolbarButton*)p;
     if (button->highlightmode == HLMODE_TOGGLE_ON)
@@ -91,7 +91,7 @@ int setFillMode(void* p){
     }
     return 0;
 }
-
+//Asks for the file name then writes to a file.
 int saveAs(void* p){
     char message[] = "CHECK CONSOLE";
     SDL_Rect r = {0,0,CANVASWIDTH,CANVASHEIGHT};
@@ -112,7 +112,7 @@ int saveAs(void* p){
     destroyStringMessage(consoleMessage);
     return 0;
 }
-
+//calls save as if there is no project name set, otherwise writes to a file.
 int save(void* p){
     if (fileName == NULL) return saveAs(p);
     
@@ -145,10 +145,11 @@ int open(void* p){
     strcat(newfileName,".png");
     if (fileName != NULL) delete fileName;
     fileName = newfileName;
-
+    //load the image as a new surface
     SDL_Surface* imageSurface = IMG_Load(newfileName);
     SDL_UnlockSurface(imageSurface);
     SDL_PixelFormat *format = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+    //Copy each pixel from the surface to the screen
     for (size_t i = 0; i < CANVASWIDTH * CANVASHEIGHT; i++)
     {
         Uint8 r;
@@ -181,7 +182,7 @@ int newDoc(void* p){
     strcat(newfileName,".png\0");
     if(fileName != NULL) delete fileName;
     fileName = newfileName;
-
+    // Set the memory of the pixel grid to blank
     memset(pixelGrid,0xFFFFFFFF,CANVASWIDTH * CANVASHEIGHT * sizeof(Uint32));
     SDL_UpdateTexture(canvas,NULL,pixelGrid,CANVASWIDTH * sizeof(Uint32));
     destroyStringMessage(consoleMessage);
@@ -189,7 +190,7 @@ int newDoc(void* p){
 }
 
 
-
+//Events for the rgb slider
 int setColour(void* p){
     toolbarButton* button = ((toolbarButton*)p);
     int bpp = 8;
@@ -237,7 +238,7 @@ void hidePolyOptions(){
     polybar->mode = 1;
     polySlider->hide = 1;
 }
-
+//Events for the tool buttons
 int setToolPencil(void* p){
     selectedTool = PENCIL;
     printf("Selected Tool: Pencil\n");

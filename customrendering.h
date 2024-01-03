@@ -50,7 +50,7 @@ typedef struct toolbarRect{
     Uint8 bw;
     Uint8 bh;
 }toolbarRect;
-
+//Different modes that affect how the button is drawn to the screen
 typedef enum HighlightMode{
     HLMODE_SELECTED,
     HLMODE_UNSELECTED,
@@ -59,7 +59,7 @@ typedef enum HighlightMode{
     HLMODE_COLOR,
     HLMODE_UNCHANGING
 }HighlightMode;
-
+//The button struct containing a function pointer to it's specific method, as well as it's colour and texture
 typedef struct toolbarButton{
     int (*Pressed)(void* p);
     SDL_Texture *Texture;
@@ -159,14 +159,14 @@ void renderCircle(SDL_Renderer* renderer, int cx, int cy, int radius){
 void renderPoly(SDL_Renderer* renderer, int cx, int cy, int px, int py, int verts){
     double rx = px - cx, ry = py - cy;
     double angle = 2 * M_PI / verts;
-    
+    //uses vectors to do this
 
     for (size_t i = 0; i < verts; i++)
     {
         double b = angle * i;
         double vx = cx;
         double vy = cy;
-
+        //formula for rotating vector
         vx += cos(b) * rx - sin(b) * ry;
         vy += sin(b) * rx + cos(b) * ry;
         SDL_RenderDrawLine(renderer,cx,cy,(int)vx,(int)vy);
@@ -273,7 +273,7 @@ void renderAllSliders(SDL_Renderer * renderer, MultiSlider* sliders, int numSlid
     }
     
 }
-
+//Draws a toolbar onto the screen, taking the mouse position into account to work out which button is hovered over
 toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int scale, int m_x, int m_y, int m_down){
     toolbarButton* selectedButton = NULL;
 
@@ -304,7 +304,7 @@ toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int s
 
             SDL_SetRenderDrawColor(renderer,0,0,0,255);
             
-            if (i == m_x && j == m_y)
+            if (i == m_x && j == m_y)//check if button is hovered
             {
                 SDL_SetRenderDrawColor(renderer,196,180,84,255);
                 selectedButton = toolbarObject->buttons + (j * bar.w + i);
@@ -341,20 +341,20 @@ toolbarButton* drawToolbar(SDL_Renderer* renderer, toolbar *toolbarObject, int s
     //SDL_RenderDrawRect(renderer, &box);
 
 }
-
+//renders many toolbars onto the screen
 toolbarButton* renderAllToolbars(SDL_Renderer* renderer,toolbar* toolbars, int numToolbars, int scale, int m_x, int m_y, int m_down){
     
     toolbarButton* selectedButton = NULL;
     for (size_t i = 0; i < numToolbars; i++)
     {
-        if (toolbars[i].mode) continue;
+        if (toolbars[i].mode) continue;//skips if it is hidden
         
         int boxpos_x = -1;
         int boxpos_y = -1;
         int m_down_local = m_down;
         if (m_y > toolbars[i].rect.y && m_y < toolbars[i].rect.y + toolbars[i].rect.h * toolbars[i].rect.bh * scale && m_x < toolbars[i].rect.x + toolbars[i].rect.w * toolbars[i].rect.bw * scale)
         {
-            
+            //works out selected button
             int x = m_x - toolbars[i].rect.x;
             int y = m_y - toolbars[i].rect.y;
             boxpos_x = (int)(x ) / (toolbars[i].rect.bh * scale);

@@ -177,7 +177,7 @@ void drawBresenham(Uint32* pixels, int width, int height, int x1, int y1, int x2
 }
 
 void drawBresenhamSafe(Uint32* pixels, int width, int height, int x1, int y1, int x2, int y2, Uint32 colour){
-
+//Draws bresenham but checks if a pixel is out of bounds before drawing
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int e = (dx>dy ? dx : -dy)/2,e2;
@@ -206,7 +206,8 @@ void drawBresenhamSafe(Uint32* pixels, int width, int height, int x1, int y1, in
 }
 
 //Source from Eike Anderson ends here
-
+//Draws a polygon using vector math, first allocating a new buffer image of empty pixels and drawing to it, the compositing it to the main pixel grid
+//Also can draw another polygon of empty pixels inside it for a non-filled shape
 void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int py, int verts, int fill, int fillpercent, Uint32 colour){
     const double deg2rad = M_PI / 180.0;
     Uint32* buffer = (Uint32*)malloc(sizeof(Uint32) * width * height);
@@ -269,7 +270,7 @@ void drawPoly(Uint32* pixels, int width, int height, int cx, int cy, int px, int
     compImage(pixels,buffer,width * height);
     free(buffer);
 }
-
+//Draws two lines apart then fills theme
 void drawThickLine(Uint32* pixels, int cw, int ch, int x1, int y1, int x2, int y2, int w, Uint32 colour){
     Uint32* buffer = (Uint32*)malloc(sizeof(Uint32) * cw * ch);
     for (size_t i = 0; i < cw * ch; i++)
